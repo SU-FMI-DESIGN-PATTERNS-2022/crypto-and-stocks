@@ -18,5 +18,5 @@ func main() {
 
 	order.NewPresenter(orderDB)
 
-	orderDB.Close()
+	defer orderDB.Close()
 }

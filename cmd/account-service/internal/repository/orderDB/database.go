@@ -17,21 +17,8 @@ func NewDatabase(db *sql.DB) *Database {
 	}
 }
 
-func (db *Database) StoreOrder(order Model) error {
-	_, err := db.instance.Exec(insertSQL,
-		order.UserID,
-		order.Type,
-		order.Symbol,
-		strconv.FormatFloat(order.Amount, 'E', -1, 64),
-		strconv.FormatFloat(order.Price, 'E', -1, 64),
-		order.Date.Format("2006-1-2"),
-	)
-
-	return err
-}
-
-func (db *Database) GetAllOrders() ([]Model, error) {
-	rows, err := db.instance.Query(selectAllSQL)
+func (db *Database) getOrderRequest(query string, args ...any) ([]Model, error) {
+	rows, err := db.instance.Query(query, args...)
 
 	defer rows.Close()
 
@@ -60,6 +47,31 @@ func (db *Database) GetAllOrders() ([]Model, error) {
 	}
 
 	return orders, nil
+}
+
+func (db *Database) StoreOrder(order Model) error {
+	_, err := db.instance.Exec(insertSQL,
+		order.UserID,
+		order.Type,
+		order.Symbol,
+		strconv.FormatFloat(order.Amount, 'E', -1, 64),
+		strconv.FormatFloat(order.Price, 'E', -1, 64),
+		order.Date.Format("2006-1-2"),
+	)
+
+	return err
+}
+
+func (db *Database) GetAllOrders() ([]Model, error) {
+	return db.getOrderRequest(selectAllSQL)
+}
+
+func (db *Database) GetAllOrdersBySymbol(symbol string) ([]Model, error) {
+	return db.getOrderRequest(selectAllWhereSymbolSQL, symbol)
+}
+
+func (db *Database) GetAllOrdersByUserId(userId int) ([]Model, error) {
+	return db.getOrderRequest(selectAllWhereUserIdSQL, userId)
 }
 
 func (db *Database) Close() {
