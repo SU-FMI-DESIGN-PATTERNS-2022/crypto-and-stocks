@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/env"
-	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/prices"
+	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/stream"
 )
 
-func streamHandler(b []byte) {
-	var cryptoResponse []prices.CryptoResponse
+func cryptoHandler(b []byte) {
+	var cryptoResponse []stream.CryptoResponse
 	if err := json.Unmarshal(b, &cryptoResponse); err != nil {
 		fmt.Println(err)
 	}
@@ -18,26 +18,53 @@ func streamHandler(b []byte) {
 	fmt.Println(cryptoResponse)
 }
 
+func stockHandler(b []byte) {
+	var stockResponse []stream.StockResponse
+	if err := json.Unmarshal(b, &stockResponse); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(stockResponse)
+}
+
 func main() {
 	wsConfig := env.LoadWebSocetConfig()
-	cryptoStreamConfig := prices.StreamConfig{
+	cryptoStreamConfig := stream.StreamConfig{
 		URL:    wsConfig.CryptoURL,
 		Quotes: wsConfig.CryptoQuotes,
 		Key:    wsConfig.Key,
 		Secret: wsConfig.Secret,
 	}
 
-	cryptoStream, err := prices.NewStream(cryptoStreamConfig)
+	stockStreamConfig := stream.StreamConfig{
+		URL:    wsConfig.StockURL,
+		Quotes: wsConfig.StockQuotes,
+		Key:    wsConfig.Key,
+		Secret: wsConfig.Secret,
+	}
+
+	cryptoStream, err := stream.NewPriceStream(cryptoStreamConfig)
+	if err != nil {
+		panic(err)
+	}
+	stockStream, err := stream.NewPriceStream(stockStreamConfig)
 	if err != nil {
 		panic(err)
 	}
 
 	go func() {
-		if err := cryptoStream.Start(streamHandler); err != nil {
+		if err := cryptoStream.Start(cryptoHandler); err != nil {
 			panic(err)
 		}
 	}()
 
-	time.Sleep(4 * time.Second)
+	go func() {
+		if err := stockStream.Start(stockHandler); err != nil {
+			panic(err)
+		}
+	}()
+
+	time.Sleep(time.Minute)
 	cryptoStream.Stop()
+	stockStream.Stop()
 }

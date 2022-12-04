@@ -1,4 +1,4 @@
-package prices
+package stream
 
 import (
 	"encoding/json"
@@ -27,28 +27,28 @@ type Stream struct {
 func newSocketConnection(url string) (*socetConn, error) {
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("dial websocket fails: %w", err)
 	}
 
 	return &socetConn{conn}, nil
 }
 
-func NewStream(clientSocetConfig StreamConfig) (*Stream, error) {
+func NewPriceStream(clientSocetConfig StreamConfig) (*Stream, error) {
 	conn, err := newSocketConnection(clientSocetConfig.URL)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create new socket connection fails: %w", err)
 	}
 
 	if _, err := conn.readResponse("success", "connected"); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read connection response fails: %w", err)
 	}
 
 	if err := conn.authenticate(clientSocetConfig.Key, clientSocetConfig.Secret); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("authenticate to socket fails: %w", err)
 	}
 
 	if err := conn.subscribe(clientSocetConfig.Quotes); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("subscibe to quotes fails: %w", err)
 	}
 
 	return &Stream{
@@ -80,7 +80,7 @@ func (s *Stream) listenForResponse(errChan chan error) {
 		default:
 			resp, err := s.conn.readResponse("q", "")
 			if err != nil {
-				errChan <- err
+				errChan <- fmt.Errorf("read quote response fails: %w", err)
 				return
 			}
 
@@ -117,15 +117,15 @@ func (sc *socetConn) authenticate(key, secret string) error {
 
 	authRequestJSON, err := json.Marshal(authRequest)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal authenticate request fails: %w", err)
 	}
 
 	if err := sc.WriteMessage(websocket.TextMessage, authRequestJSON); err != nil {
-		return err
+		return fmt.Errorf("write authenticate request to socket fails: %w", err)
 	}
 
 	if _, err := sc.readResponse("success", "authenticated"); err != nil {
-		return err
+		return fmt.Errorf("read authenticate response fails: %w", err)
 	}
 
 	return nil
@@ -139,15 +139,15 @@ func (sc *socetConn) subscribe(quotes []string) error {
 
 	subRequestJSON, err := json.Marshal(subRequest)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal subscribe request fails: %w", err)
 	}
 
 	if err := sc.WriteMessage(websocket.TextMessage, subRequestJSON); err != nil {
-		return err
+		return fmt.Errorf("write subscribe request to socket fails: %w", err)
 	}
 
 	if _, err := sc.readResponse("subscription", ""); err != nil {
-		return err
+		return fmt.Errorf("read subscribe response fails: %w", err)
 	}
 
 	return nil
@@ -156,16 +156,18 @@ func (sc *socetConn) subscribe(quotes []string) error {
 func (sc *socetConn) readResponse(expectedType, expectedMsg string) ([]byte, error) {
 	_, message, err := sc.ReadMessage()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read response form socket fails: %w", err)
 	}
 
 	var response []Response
 	if err := json.Unmarshal(message, &response); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal response fails: %w", err)
 	}
 
-	if response[0].Type != expectedType || response[0].Message != expectedMsg {
-		return nil, fmt.Errorf("%d: %s", response[0].Code, response[0].Message)
+	for _, responseMsg := range response {
+		if responseMsg.Type != expectedType || responseMsg.Message != expectedMsg {
+			return nil, fmt.Errorf("unexpected response: %d: %s", responseMsg.Code, responseMsg.Message)
+		}
 	}
 
 	return message, nil
