@@ -1,4 +1,4 @@
-package orderDB
+package order_repository
 
 const insertSQL = `
 INSERT INTO "orders"("userID", "type", "symbol", "amount", "price", "date")

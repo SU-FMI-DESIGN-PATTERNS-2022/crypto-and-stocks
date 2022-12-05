@@ -1,4 +1,4 @@
-package orderDB
+package order_repository
 
 import (
 	"database/sql"
@@ -7,24 +7,24 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type Database struct {
+type OrderTable struct {
 	instance *sql.DB
 }
 
-func NewDatabase(db *sql.DB) *Database {
-	return &Database{
+func NewOrderTable(db *sql.DB) *OrderTable {
+	return &OrderTable{
 		instance: db,
 	}
 }
 
-func (db *Database) getOrderRequest(query string, args ...any) ([]Model, error) {
+func (db *OrderTable) getOrderRequest(query string, args ...any) ([]Order, error) {
 	rows, err := db.instance.Query(query, args...)
 
 	defer rows.Close()
 
-	var orders []Model
+	var orders []Order
 	for rows.Next() {
-		var order Model
+		var order Order
 		err := rows.Scan(
 			&order.ID,
 			&order.UserID,
@@ -49,7 +49,7 @@ func (db *Database) getOrderRequest(query string, args ...any) ([]Model, error) 
 	return orders, nil
 }
 
-func (db *Database) StoreOrder(order Model) error {
+func (db *OrderTable) StoreOrder(order Order) error {
 	_, err := db.instance.Exec(insertSQL,
 		order.UserID,
 		order.Type,
@@ -62,18 +62,14 @@ func (db *Database) StoreOrder(order Model) error {
 	return err
 }
 
-func (db *Database) GetAllOrders() ([]Model, error) {
+func (db *OrderTable) GetAllOrders() ([]Order, error) {
 	return db.getOrderRequest(selectAllSQL)
 }
 
-func (db *Database) GetAllOrdersBySymbol(symbol string) ([]Model, error) {
+func (db *OrderTable) GetAllOrdersBySymbol(symbol string) ([]Order, error) {
 	return db.getOrderRequest(selectAllWhereSymbolSQL, symbol)
 }
 
-func (db *Database) GetAllOrdersByUserId(userId int) ([]Model, error) {
+func (db *OrderTable) GetAllOrdersByUserId(userId int64) ([]Order, error) {
 	return db.getOrderRequest(selectAllWhereUserIdSQL, userId)
-}
-
-func (db *Database) Close() {
-	defer db.instance.Close()
 }
