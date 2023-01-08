@@ -29,12 +29,13 @@ func goDotEnvVariable(key string) string {
 
 func LoadWebSocetConfig() WebSocetConfig {
 	key := goDotEnvVariable("KEY")
+	secret := goDotEnvVariable("SECRET")
 	return WebSocetConfig{
 		CryptoURL:    "wss://stream.data.alpaca.markets/v1beta1/crypto",
 		StockURL:     "wss://stream.data.alpaca.markets/v2/iex",
 		CryptoQuotes: []string{"BTCUSD", "ETHUSD", "ADAUSD", "DOTUSD", "USDTUSD", "SOLUSD", "MATICUSD", "LINKUSD", "ATOMUSD", "BMBUSD", "LTCUSD"},
 		StockQuotes:  []string{"AAPL", "AMZN"},
 		Key:          key,
-		Secret:       "IYUve7og11abpgu4Qv8MIGCoFTd8HdALaLg6aaZ5",
+		Secret:       secret,
 	}
 }
