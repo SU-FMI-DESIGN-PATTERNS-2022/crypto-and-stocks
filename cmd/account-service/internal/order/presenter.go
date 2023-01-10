@@ -12,8 +12,10 @@ type OrderRepository interface {
 }
 
 type UserRepository interface {
+	CreateUser(userId int64, name string) error
+	CreateBot(creatorID int64, amount float64) error
+	AddOrder(userId int64, orderId int64) error
 	MergeUserOrders(id int64) error
-	GetCurrentAmount(id int64) (float64, error)
 }
 
 type Presenter struct {
@@ -26,9 +28,4 @@ func NewPresenter(orderRepo OrderRepository, userRepo UserRepository) Presenter 
 		orderRepo: orderRepo,
 		userRepo:  userRepo,
 	}
-}
-
-func (p *Presenter) Store() {
-
-	// p.repo.StoreOrder(request.body)
 }

@@ -1,5 +1,13 @@
 package user_repository
 
+const createUserSQL = `
+INSERT INTO "users"("userID", "name", "orders", "isBot", "creatorID", "amount")
+VALUES($1,$2,$3,$4,$5,$6)`
+
+const createBotSQL = `
+INSERT INTO "users"("userID", "name", "orders", "isBot", "creatorID", "amount")
+VALUES($1,$2,$3,$4,$5,$6)`
+
 const selectAmountWhereIdSQL = `
 SELECT "amount" FROM "users" WHERE "id"=$1`
 

@@ -17,6 +17,47 @@ func NewUserTable(db *sql.DB) *UserTable {
 	}
 }
 
+func (db *UserTable) CreateUser(userId int64, name string) error {
+	_, err := db.instance.Exec(createUserSQL,
+		userId,
+		name,
+		pq.Array(make([]int64, 0)),
+		false,
+		nil,
+		0,
+	)
+
+	return err
+}
+
+func (db *UserTable) CreateBot(creatorID int64, amount float64) error {
+	_, err := db.instance.Exec(createBotSQL,
+		nil,
+		nil,
+		pq.Array(make([]int64, 0)),
+		true,
+		nil,
+		amount,
+	)
+
+	return err
+}
+
+func (db *UserTable) AddOrder(userId int64, orderId int64) error {
+	row := db.instance.QueryRow(selectOrdersWhereIdSQL, userId)
+	var orders []int64
+	ordersErr := row.Scan(pq.Array(&orders))
+
+	if ordersErr != nil || row.Err() != nil {
+		return ordersErr
+	}
+
+	orders = append(orders, orderId)
+	_, updateErr := db.instance.Exec(updateUserOrdersWhereIdSQL, pq.Array(orders), userId)
+
+	return updateErr
+}
+
 func (db *UserTable) MergeUserOrders(id int64) error {
 	rows, err := db.instance.Query(selectAllWhereCreatorIdSQL, id)
 
@@ -69,18 +110,4 @@ func (db *UserTable) MergeUserOrders(id int64) error {
 	_, updateErr := db.instance.Exec(updateUserOrdersWhereIdSQL, pq.Array(orders), id)
 
 	return updateErr
-}
-
-// might need to calculate amount of bots as well
-func (db *UserTable) GetCurrentAmount(id int64) (float64, error) {
-	row := db.instance.QueryRow(selectAmountWhereIdSQL, id)
-
-	var amount float64
-	err := row.Scan(&amount)
-
-	if err != nil || row.Err() != nil {
-		return 0, err
-	}
-
-	return amount, nil
 }
