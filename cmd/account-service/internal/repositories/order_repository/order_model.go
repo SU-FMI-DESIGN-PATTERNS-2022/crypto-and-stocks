@@ -1,10 +1,10 @@
-package orderDB
+package order_repository
 
 import "time"
 
-type Model struct {
-	ID     int
-	UserID int
+type Order struct {
+	ID     int64
+	UserID int64
 	Type   string
 	Symbol string
 	Amount float64
