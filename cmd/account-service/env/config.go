@@ -1,5 +1,12 @@
 package env
 
+import (
+	"github.com/joho/godotenv"
+	"log"
+	"os"
+	"strconv"
+)
+
 type DBConfig struct {
 	Host     string
 	Port     int
@@ -8,12 +15,32 @@ type DBConfig struct {
 	DBName   string
 }
 
+func goDotEnvVariable(key string) string {
+
+	// load .env file
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	return os.Getenv(key)
+}
+
 func LoadDBConfig() DBConfig {
+	host := goDotEnvVariable("HOST")
+	port, err := strconv.Atoi(goDotEnvVariable("PORT"))
+	if err != nil {
+		panic(err)
+	}
+	dbuser := goDotEnvVariable("DBUSER")
+	password := goDotEnvVariable("PASSWORD")
+	dbname := goDotEnvVariable("DBNAME")
 	return DBConfig{
-		Host:     "mouse.db.elephantsql.com",
-		Port:     5432,
-		User:     "tfalxqpw",
-		Password: "P4Ewg8JM_QgiH6pmWhvQpIevj_XmsHvf",
-		DBName:   "tfalxqpw",
+		Host:     host,
+		Port:     port,
+		User:     dbuser,
+		Password: password,
+		DBName:   dbname,
 	}
 }
