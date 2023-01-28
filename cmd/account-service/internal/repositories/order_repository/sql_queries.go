@@ -1,7 +1,7 @@
 package order_repository
 
 const insertSQL = `
-INSERT INTO "orders"("userID", "type", "symbol", "amount", "price", "date")
+INSERT INTO "orders"("user_id", "type", "symbol", "amount", "price", "date")
 VALUES($1,$2,$3,$4,$5,$6)`
 
 const selectAllSQL = `
@@ -11,4 +11,4 @@ const selectAllWhereSymbolSQL = `
 SELECT * FROM "orders" WHERE "symbol"=$1`
 
 const selectAllWhereUserIdSQL = `
-SELECT * FROM "orders" WHERE "userId"=$1`
+SELECT * FROM "orders" WHERE "user_id"=$1`
