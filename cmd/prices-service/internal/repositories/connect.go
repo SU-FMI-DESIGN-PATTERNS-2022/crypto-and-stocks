@@ -50,24 +50,3 @@ func Close(client *mongo.Client, ctx context.Context,
 		}
 	}()
 }
-
-func main() {
-
-	mongoConfig := env.LoadMongoConfig()
-	client, connectErr := Connect(mongoConfig)
-
-	if connectErr != nil {
-		panic(connectErr)
-	}
-	defer func() {
-		if connectErr = client.Disconnect(context.TODO()); connectErr != nil {
-			panic(connectErr)
-		}
-	}()
-	// Checking whether the connection was successful
-	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Successfully connected and pinged MongoDB.")
-}

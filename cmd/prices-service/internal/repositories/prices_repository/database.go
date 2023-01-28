@@ -36,7 +36,3 @@ func insertMany(client *mongo.Client, ctx context.Context, dataBase, col string,
 	result, err := collection.InsertMany(ctx, docs)
 	return result, err
 }
-
-func main() {
-
-}

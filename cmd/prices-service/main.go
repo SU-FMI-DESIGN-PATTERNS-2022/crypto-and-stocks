@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/repositories"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"time"
 
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/env"
@@ -28,6 +31,24 @@ func stockHandler(b []byte) {
 }
 
 func main() {
+	mongoConfig := env.LoadMongoConfig()
+	client, connectErr := repositories.Connect(mongoConfig)
+
+	if connectErr != nil {
+		panic(connectErr)
+	}
+	defer func() {
+		if connectErr = client.Disconnect(context.TODO()); connectErr != nil {
+			panic(connectErr)
+		}
+	}()
+	// Checking whether the connection was successful
+	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected and pinged MongoDB.")
+
 	wsConfig := env.LoadWebSocetConfig()
 	cryptoStreamConfig := stream.StreamConfig{
 		URL:    wsConfig.CryptoURL,
