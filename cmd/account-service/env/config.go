@@ -1,10 +1,11 @@
 package env
 
 import (
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 type DBConfig struct {
@@ -16,9 +17,7 @@ type DBConfig struct {
 }
 
 func goDotEnvVariable(key string) string {
-
-	// load .env file
-	err := godotenv.Load(".env")
+	err := godotenv.Load("./env/.env")
 
 	if err != nil {
 		log.Fatalf("Error loading .env file")

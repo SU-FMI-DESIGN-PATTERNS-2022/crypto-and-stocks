@@ -5,7 +5,7 @@ import (
 )
 
 type OrderRepository interface {
-	StoreOrder(order order_repository.Order) error
+	StoreOrder(userId int64, orderType string, symbol string, amount float64, price float64) error
 	GetAllOrders() ([]order_repository.Order, error)
 	GetAllOrdersByUserId(userId int64) ([]order_repository.Order, error)
 	GetAllOrdersBySymbol(symbol string) ([]order_repository.Order, error)
@@ -14,8 +14,9 @@ type OrderRepository interface {
 type UserRepository interface {
 	CreateUser(userId int64, name string) error
 	CreateBot(creatorID int64, amount float64) error
-	AddOrder(userId int64, orderId int64) error
-	MergeUserOrders(id int64) error
+	MergeUserAndBot(id int64) error
+	MergeAllUserOrders(id int64) error
+	GetAmountByUserId(id int64) (float64, error)
 }
 
 type Presenter struct {

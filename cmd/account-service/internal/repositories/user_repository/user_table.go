@@ -3,7 +3,6 @@ package user_repository
 import (
 	"database/sql"
 
-	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
 
@@ -21,7 +20,6 @@ func (db *UserTable) CreateUser(userId int64, name string) error {
 	_, err := db.instance.Exec(createUserSQL,
 		userId,
 		name,
-		pq.Array(make([]int64, 0)),
 		false,
 		nil,
 		0,
@@ -31,83 +29,87 @@ func (db *UserTable) CreateUser(userId int64, name string) error {
 }
 
 func (db *UserTable) CreateBot(creatorID int64, amount float64) error {
+	//TODO: check if the amount is valid and if it is subtract it from the user amount
 	_, err := db.instance.Exec(createBotSQL,
 		nil,
 		nil,
-		pq.Array(make([]int64, 0)),
 		true,
-		nil,
+		creatorID,
 		amount,
 	)
 
 	return err
 }
 
-func (db *UserTable) AddOrder(userId int64, orderId int64) error {
-	row := db.instance.QueryRow(selectOrdersWhereIdSQL, userId)
-	var orders []int64
-	ordersErr := row.Scan(pq.Array(&orders))
+func (db *UserTable) MergeUserAndBot(id int64) error {
+	//TODO: after merge update user amount by bot amount
+	row := db.instance.QueryRow(selectUserWhereIdSQL, id)
 
-	if ordersErr != nil || row.Err() != nil {
+	var bot User
+	userErr := row.Scan(
+		&bot.ID,
+		&bot.Name,
+		&bot.UserID,
+		&bot.IsBot,
+		&bot.CreatorID,
+		&bot.Amount,
+	)
+
+	if userErr != nil {
+		return userErr
+	}
+
+	_, ordersErr := db.instance.Exec(updateOrdersAfterMergeSQL, bot.CreatorID, id)
+
+	if ordersErr != nil {
 		return ordersErr
 	}
 
-	orders = append(orders, orderId)
-	_, updateErr := db.instance.Exec(updateUserOrdersWhereIdSQL, pq.Array(orders), userId)
+	_, deleteErr := db.instance.Exec(deleteUserWhereIdSQL, id)
 
-	return updateErr
+	return deleteErr
 }
 
-func (db *UserTable) MergeUserOrders(id int64) error {
-	rows, err := db.instance.Query(selectAllWhereCreatorIdSQL, id)
+func (db *UserTable) MergeAllUserOrders(id int64) error {
+	botsRows, err := db.instance.Query(selectAllWhereCreatorIdSQL, id)
 
-	defer rows.Close()
+	defer botsRows.Close()
 
-	var users []User
-	for rows.Next() {
-		var user User
-		err := rows.Scan(
-			&user.ID,
-			&user.Name,
-			pq.Array(&user.Orders),
-			&user.IsBot,
-			&user.CreatorID,
-			&user.Amount,
-		)
+	var bots []int64
+	for botsRows.Next() {
+		var botId int64
+		err := botsRows.Scan(&botId)
 
 		if err != nil {
-
 			return err
 		}
 
-		users = append(users, user)
+		bots = append(bots, botId)
 	}
 
-	if rows.Err() != nil {
+	if botsRows.Err() != nil {
 		return err
 	}
 
-	var orders []int64
-	for _, u := range users {
-		orders = append(orders, u.Orders...)
-		_, deleteErr := db.instance.Exec(deleteUserWhereIdSQL, u.ID)
+	for _, b := range bots {
+		//TODO: after merge update user amount by bot amount
+		_, ordersErr := db.instance.Exec(updateOrdersAfterMergeSQL, id, b)
+
+		if ordersErr != nil {
+			return ordersErr
+		}
+
+		_, deleteErr := db.instance.Exec(deleteUserWhereIdSQL, b)
 
 		if deleteErr != nil {
 			return deleteErr
 		}
 	}
 
-	row := db.instance.QueryRow(selectOrdersWhereIdSQL, id)
-	var userOrders []int64
-	ordersErr := row.Scan(pq.Array(&userOrders))
+	return err
+}
 
-	if ordersErr != nil || row.Err() != nil {
-		return ordersErr
-	}
-
-	orders = append(orders, userOrders...)
-
-	_, updateErr := db.instance.Exec(updateUserOrdersWhereIdSQL, pq.Array(orders), id)
-
-	return updateErr
+func (db *UserTable) GetAmountByUserId(id int64) (float64, error) {
+	//TODO
+	return 0, nil
 }
