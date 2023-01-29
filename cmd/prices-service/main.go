@@ -32,18 +32,21 @@ func stockHandler(b []byte) {
 
 func main() {
 	mongoConfig := env.LoadMongoConfig()
-	client, connectErr := repositories.Connect(mongoConfig)
+	ctx := context.TODO()
+	client, cancel, connectErr := repositories.Connect(mongoConfig)
 
 	if connectErr != nil {
 		panic(connectErr)
 	}
 	defer func() {
-		if connectErr = client.Disconnect(context.TODO()); connectErr != nil {
+		if connectErr = client.Disconnect(ctx); connectErr != nil {
 			panic(connectErr)
 		}
 	}()
+
+	defer repositories.Close(client, ctx, cancel)
 	// Checking whether the connection was successful
-	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
 		panic(err)
 	}
 
