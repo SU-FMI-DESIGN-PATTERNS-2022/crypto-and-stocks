@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/repositories"
+	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo"
+	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/env"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"time"
 
-	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/env"
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/stream"
 )
 
@@ -33,7 +33,9 @@ func stockHandler(b []byte) {
 func main() {
 	mongoConfig := env.LoadMongoConfig()
 	ctx := context.TODO()
-	client, cancel, connectErr := repositories.Connect(mongoConfig)
+	client, cancel, connectErr := mongo.Connect(mongoConfig)
+	//var pricesRepo = prices_repository.NewDatabase(client)
+	//var pricesPresenter = prices.NewPresenter(pricesRepo)
 
 	if connectErr != nil {
 		panic(connectErr)
@@ -44,7 +46,7 @@ func main() {
 		}
 	}()
 
-	defer repositories.Close(client, ctx, cancel)
+	defer mongo.Close(client, ctx, cancel)
 	// Checking whether the connection was successful
 	if err := client.Ping(ctx, readpref.Primary()); err != nil {
 		panic(err)
