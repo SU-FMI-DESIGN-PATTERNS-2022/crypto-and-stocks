@@ -15,3 +15,6 @@ SELECT * FROM "orders" WHERE "user_id"=$1`
 
 const selectUserAmountWhereUserIdSQL = `
 SELECT "amount" FROM "users" WHERE "id"=$1`
+
+const updateUserAmountSQL = `
+UPDATE "users" SET "amount"=$1 WHERE "id"=$2`

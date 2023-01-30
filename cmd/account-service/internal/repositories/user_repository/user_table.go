@@ -1,23 +1,26 @@
 package user_repository
 
 import (
-	"database/sql"
+	"errors"
+	"fmt"
+	"math"
 
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
 type UserTable struct {
-	instance *sql.DB
+	instance *sqlx.DB
 }
 
-func NewUserTable(db *sql.DB) *UserTable {
+func NewUserTable(db *sqlx.DB) *UserTable {
 	return &UserTable{
 		instance: db,
 	}
 }
 
-func (db *UserTable) CreateUser(userId int64, name string) error {
-	_, err := db.instance.Exec(createUserSQL,
+func (table *UserTable) CreateUser(userId int64, name string) error {
+	_, err := table.instance.Exec(createUserSQL,
 		userId,
 		name,
 		false,
@@ -28,9 +31,29 @@ func (db *UserTable) CreateUser(userId int64, name string) error {
 	return err
 }
 
-func (db *UserTable) CreateBot(creatorID int64, amount float64) error {
-	//TODO: check if the amount is valid and if it is subtract it from the user amount
-	_, err := db.instance.Exec(createBotSQL,
+func (table *UserTable) CreateBot(creatorID int64, amount float64) error {
+	var creator User
+	userErr := table.instance.Get(&creator, selectUserWhereIdSQL, creatorID)
+
+	if userErr != nil {
+		return userErr
+	}
+
+	if creator.Amount < amount {
+		return errors.New("Not enough amount to create bot")
+	}
+
+	if creator.IsBot {
+		return errors.New("Bots can't have their own bots")
+	}
+
+	_, updateErr := table.instance.Exec(updateUserAmountSQL, math.Round((creator.Amount-amount)*100)/100, creator.ID)
+
+	if updateErr != nil {
+		return updateErr
+	}
+
+	_, err := table.instance.Exec(createBotSQL,
 		nil,
 		nil,
 		true,
@@ -41,65 +64,76 @@ func (db *UserTable) CreateBot(creatorID int64, amount float64) error {
 	return err
 }
 
-func (db *UserTable) MergeUserAndBot(id int64) error {
-	//TODO: after merge update user amount by bot amount
-	row := db.instance.QueryRow(selectUserWhereIdSQL, id)
-
+func (table *UserTable) MergeUserAndBot(id int64) error {
 	var bot User
-	userErr := row.Scan(
-		&bot.ID,
-		&bot.Name,
-		&bot.UserID,
-		&bot.IsBot,
-		&bot.CreatorID,
-		&bot.Amount,
-	)
+	botErr := table.instance.Get(&bot, selectUserWhereIdSQL, id)
+
+	if botErr != nil {
+		return botErr
+	}
+
+	if !bot.IsBot {
+		return errors.New("Can't merge 2 users - one must be bot")
+	}
+
+	var user User
+	userErr := table.instance.Get(&user, selectUserWhereIdSQL, bot.CreatorID)
 
 	if userErr != nil {
 		return userErr
 	}
 
-	_, ordersErr := db.instance.Exec(updateOrdersAfterMergeSQL, bot.CreatorID, id)
+	_, ordersErr := table.instance.Exec(updateOrdersAfterMergeSQL, bot.CreatorID, id)
 
 	if ordersErr != nil {
 		return ordersErr
 	}
 
-	_, deleteErr := db.instance.Exec(deleteUserWhereIdSQL, id)
+	_, amountErr := table.instance.Exec(updateUserAmountSQL, math.Round((user.Amount+bot.Amount)*100)/100, user.ID)
+
+	if amountErr != nil {
+		return amountErr
+	}
+
+	_, deleteErr := table.instance.Exec(deleteUserWhereIdSQL, id)
 
 	return deleteErr
 }
 
-func (db *UserTable) MergeAllUserOrders(id int64) error {
-	botsRows, err := db.instance.Query(selectAllWhereCreatorIdSQL, id)
-
-	defer botsRows.Close()
-
-	var bots []int64
-	for botsRows.Next() {
-		var botId int64
-		err := botsRows.Scan(&botId)
-
-		if err != nil {
-			return err
-		}
-
-		bots = append(bots, botId)
+func (table *UserTable) MergeAllUserOrders(id int64) error {
+	var user User
+	userErr := table.instance.Get(&user, selectUserWhereIdSQL, id)
+	if userErr != nil {
+		return userErr
 	}
 
-	if botsRows.Err() != nil {
+	if user.IsBot {
+		return errors.New("Bot can't merge with other users")
+	}
+
+	var bots []User
+	err := table.instance.Select(&bots, selectAllWhereCreatorIdSQL, id)
+
+	if err != nil {
 		return err
 	}
 
 	for _, b := range bots {
-		//TODO: after merge update user amount by bot amount
-		_, ordersErr := db.instance.Exec(updateOrdersAfterMergeSQL, id, b)
+		//TODO: fix bug where some queries are not executed
+		fmt.Println(user.Amount, b.Amount)
+		_, amountErr := table.instance.Exec(updateUserAmountSQL, math.Round((user.Amount+b.Amount)*100)/100, user.ID)
+
+		if amountErr != nil {
+			return amountErr
+		}
+
+		_, ordersErr := table.instance.Exec(updateOrdersAfterMergeSQL, id, b.ID)
 
 		if ordersErr != nil {
 			return ordersErr
 		}
 
-		_, deleteErr := db.instance.Exec(deleteUserWhereIdSQL, b)
+		_, deleteErr := table.instance.Exec(deleteUserWhereIdSQL, b.ID)
 
 		if deleteErr != nil {
 			return deleteErr
@@ -109,7 +143,7 @@ func (db *UserTable) MergeAllUserOrders(id int64) error {
 	return err
 }
 
-func (db *UserTable) GetAmountByUserId(id int64) (float64, error) {
+func (table *UserTable) GetAmountByUserId(id int64) (float64, error) {
 	//TODO
 	return 0, nil
 }

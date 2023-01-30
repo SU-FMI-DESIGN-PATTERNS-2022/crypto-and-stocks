@@ -21,5 +21,9 @@ func main() {
 	orderRepository := order_repository.NewOrderTable(db)
 	userRepository := user_repository.NewUserTable(db)
 
+	// userRepository.CreateBot(1, 59.99)
+	// userRepository.CreateBot(1, 20.99)
+	// userRepository.MergeAllUserOrders(1)
+
 	order.NewPresenter(orderRepository, userRepository)
 }

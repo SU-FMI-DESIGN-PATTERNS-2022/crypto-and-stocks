@@ -15,10 +15,13 @@ const selectAllOrdersWhereUserIdSQL = `
 SELECT * FROM "orders" WHERE "user_id"=$1`
 
 const selectAllWhereCreatorIdSQL = `
-SELECT "id" FROM "users" WHERE "creator_id"=$1 AND "is_bot"=true`
+SELECT * FROM "users" WHERE "creator_id"=$1 AND "is_bot"=true`
 
 const updateOrdersAfterMergeSQL = `
 UPDATE "orders" SET "user_id"=$1 WHERE "user_id"=$2`
+
+const updateUserAmountSQL = `
+UPDATE "users" SET "amount"=$1 WHERE "id"=$2`
 
 const deleteUserWhereIdSQL = `
 DELETE FROM "users" WHERE "id"=$1`
