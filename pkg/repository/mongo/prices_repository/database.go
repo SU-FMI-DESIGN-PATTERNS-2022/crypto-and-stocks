@@ -2,7 +2,6 @@ package prices_repository
 
 import (
 	"context"
-	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/env"
 	_ "github.com/lib/pq"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -11,16 +10,16 @@ import (
 )
 
 type Collection struct {
-	instance *mongo.Client
-	database string
+	instance       *mongo.Client
+	database       string
+	collectionName string
 }
 
-var collection string = "prices"
-
-func NewCollection(client *mongo.Client, db string) *Collection {
+func NewCollection(client *mongo.Client, db string, col string) *Collection {
 	return &Collection{
-		instance: client,
-		database: db,
+		instance:       client,
+		database:       db,
+		collectionName: col,
 	}
 }
 
@@ -42,12 +41,12 @@ func (c *Collection) insertMany(col string, docs []interface{}) (*mongo.InsertMa
 }
 
 func (c *Collection) StoreEntry(price Prices) error {
-	_, err := c.insertOne(collection, price)
+	_, err := c.insertOne(c.collectionName, price)
 	return err
 }
 
 func (c *Collection) GetAllPrices() ([]Prices, error) {
-	collection := c.instance.Database(env.LoadMongoConfig().Database).Collection(collection)
+	collection := c.instance.Database(c.database).Collection(c.collectionName)
 
 	result, err := collection.Find(context.TODO(), bson.D{})
 
@@ -63,7 +62,7 @@ func (c *Collection) GetAllPrices() ([]Prices, error) {
 }
 
 func (c *Collection) GetAllPricesBySymbol(symbol string) ([]Prices, error) {
-	collection := c.instance.Database(c.database).Collection(collection)
+	collection := c.instance.Database(c.database).Collection(c.collectionName)
 
 	filter := bson.D{{"symbol", symbol}}
 
@@ -81,7 +80,7 @@ func (c *Collection) GetAllPricesBySymbol(symbol string) ([]Prices, error) {
 }
 
 func (c *Collection) GetAllPricesByExchange(exchange string) ([]Prices, error) {
-	collection := c.instance.Database(env.LoadMongoConfig().Database).Collection(collection)
+	collection := c.instance.Database(c.database).Collection(c.collectionName)
 
 	filter := bson.D{{"exchange", exchange}}
 
@@ -101,7 +100,7 @@ func (c *Collection) GetAllPricesByExchange(exchange string) ([]Prices, error) {
 }
 
 func (c *Collection) GetAllPricesInPeriod(from time.Time, to time.Time) ([]Prices, error) {
-	collection := c.instance.Database(env.LoadMongoConfig().Database).Collection(collection)
+	collection := c.instance.Database(c.database).Collection(c.collectionName)
 
 	filter := bson.M{"date": bson.M{
 		"$gte": primitive.NewDateTimeFromTime(from),
@@ -119,7 +118,7 @@ func (c *Collection) GetAllPricesInPeriod(from time.Time, to time.Time) ([]Price
 }
 
 func (c *Collection) GetAllPricesInPeriodSymbol(from time.Time, to time.Time, symbol string) ([]Prices, error) {
-	collection := c.instance.Database(env.LoadMongoConfig().Database).Collection(collection)
+	collection := c.instance.Database(c.database).Collection(c.collectionName)
 
 	filter := bson.M{"date": bson.M{
 		"$gte": primitive.NewDateTimeFromTime(from),

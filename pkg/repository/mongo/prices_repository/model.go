@@ -13,3 +13,12 @@ type Prices struct {
 	AskPrice float64            `bson:"ask_price,omitempty"`
 	Date     time.Time          `bson:"date,omitempty"`
 }
+
+//TODO: Add missing fields
+
+type CryptoPrice struct {
+	Prices
+}
+type StockPrices struct {
+	Prices
+}

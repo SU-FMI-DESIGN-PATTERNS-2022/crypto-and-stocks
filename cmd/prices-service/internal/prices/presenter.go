@@ -12,6 +12,7 @@ type Presenter struct {
 	pricesRepository PricesRepository
 }
 
+// TODO: PriceRepository -> CryptoPriceRepo & StockPriceRepo
 func NewPresenter(repository PricesRepository) Presenter {
 	return Presenter{
 		pricesRepository: repository,
