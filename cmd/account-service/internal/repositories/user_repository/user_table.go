@@ -31,28 +31,23 @@ func (table *UserTable) CreateUser(userId int64, name string) error {
 	return err
 }
 
+func (table *UserTable) GetUserById(id int64) (User, error) {
+	var user User
+	err := table.instance.Get(&user, selectUserWhereIdSQL, id)
+
+	if err != nil {
+		return User{}, err
+	}
+
+	return user, nil
+}
+
+func (table *UserTable) UpdateUserAmount(id int64, amount float64) error {
+	_, err := table.instance.Exec(updateUserAmountSQL, amount, id)
+	return err
+}
+
 func (table *UserTable) CreateBot(creatorID int64, amount float64) error {
-	var creator User
-	userErr := table.instance.Get(&creator, selectUserWhereIdSQL, creatorID)
-
-	if userErr != nil {
-		return userErr
-	}
-
-	if creator.Amount < amount {
-		return errors.New("Not enough amount to create bot")
-	}
-
-	if creator.IsBot {
-		return errors.New("Bots can't have their own bots")
-	}
-
-	_, updateErr := table.instance.Exec(updateUserAmountSQL, math.Round((creator.Amount-amount)*100)/100, creator.ID)
-
-	if updateErr != nil {
-		return updateErr
-	}
-
 	_, err := table.instance.Exec(createBotSQL,
 		nil,
 		nil,

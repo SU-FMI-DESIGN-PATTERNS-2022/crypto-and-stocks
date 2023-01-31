@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
+
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/env"
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/order"
 	repository "github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/repositories"
@@ -21,9 +23,12 @@ func main() {
 	orderRepository := order_repository.NewOrderTable(db)
 	userRepository := user_repository.NewUserTable(db)
 
-	// userRepository.CreateBot(1, 59.99)
-	// userRepository.CreateBot(1, 20.99)
-	// userRepository.MergeAllUserOrders(1)
+	orderPresenter := order.NewOrderPresenter(orderRepository, userRepository)
+	orderController := order.NewOrderController(orderPresenter)
 
-	order.NewPresenter(orderRepository, userRepository)
+	router := gin.Default()
+
+	order.SetupRoutes(router, orderController)
+
+	router.Run()
 }

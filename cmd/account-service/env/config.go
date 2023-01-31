@@ -28,7 +28,7 @@ func goDotEnvVariable(key string) string {
 
 func LoadDBConfig() DBConfig {
 	host := goDotEnvVariable("HOST")
-	port, err := strconv.Atoi(goDotEnvVariable("PORT"))
+	port, err := strconv.Atoi(goDotEnvVariable("DBPORT"))
 	if err != nil {
 		panic(err)
 	}
