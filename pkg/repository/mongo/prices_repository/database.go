@@ -16,6 +16,8 @@ type Collection struct {
 	collectionName string
 }
 
+//TODO: Make a new collection for CryptoPricesCollection and StockPricesCollection
+
 func NewCollection(client *mongo.Client, db string, col string) *Collection {
 	return &Collection{
 		instance:       client,
