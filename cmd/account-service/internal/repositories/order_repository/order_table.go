@@ -4,9 +4,6 @@ import (
 	"strconv"
 	"time"
 
-	"errors"
-	"math"
-
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
@@ -29,27 +26,6 @@ func (table *OrderTable) getOrderRequest(query string, args ...any) ([]Order, er
 }
 
 func (table *OrderTable) StoreOrder(userId int64, orderType string, symbol string, amount float64, price float64) error {
-	if orderType == "buy" {
-		var userAmount float64
-		userErr := table.instance.Get(&userAmount, selectUserAmountWhereUserIdSQL, userId)
-
-		if userErr != nil {
-			return userErr
-		}
-
-		if userAmount < amount*price {
-			return errors.New("Insufficient amount")
-		}
-
-		_, amountErr := table.instance.Exec(updateUserAmountSQL, math.Round((userAmount-amount*price)*100)/100, userId)
-
-		if amountErr != nil {
-			return amountErr
-		}
-	}
-
-	//TODO: Validate if user has enough crypto to sell
-
 	_, err := table.instance.Exec(insertSQL,
 		userId,
 		orderType,
@@ -59,6 +35,11 @@ func (table *OrderTable) StoreOrder(userId int64, orderType string, symbol strin
 		time.Now(),
 	)
 
+	return err
+}
+
+func (table *OrderTable) UpdateOrdersCreatorByUserId(prevUserId int64, newUserId int64) error {
+	_, err := table.instance.Exec(updateOrdersAfterMergeSQL, newUserId, prevUserId)
 	return err
 }
 
@@ -72,4 +53,8 @@ func (table *OrderTable) GetAllOrdersBySymbol(symbol string) ([]Order, error) {
 
 func (table *OrderTable) GetAllOrdersByUserId(userId int64) ([]Order, error) {
 	return table.getOrderRequest(selectAllWhereUserIdSQL, userId)
+}
+
+func (table *OrderTable) GetAllOrdersByUserIdAndSymbol(userId int64, symbol string) ([]Order, error) {
+	return table.getOrderRequest(selectAllWhereUserIdAndSymbolSQL, userId, symbol)
 }

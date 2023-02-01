@@ -13,8 +13,8 @@ SELECT * FROM "orders" WHERE "symbol"=$1`
 const selectAllWhereUserIdSQL = `
 SELECT * FROM "orders" WHERE "user_id"=$1`
 
-const selectUserAmountWhereUserIdSQL = `
-SELECT "amount" FROM "users" WHERE "id"=$1`
+const selectAllWhereUserIdAndSymbolSQL = `
+SELECT * FROM "orders" WHERE "user_id"=$1 AND "symbol"=$2`
 
-const updateUserAmountSQL = `
-UPDATE "users" SET "amount"=$1 WHERE "id"=$2`
+const updateOrdersAfterMergeSQL = `
+UPDATE "orders" SET "user_id"=$1 WHERE "user_id"=$2`
