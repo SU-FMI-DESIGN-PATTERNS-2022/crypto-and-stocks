@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
@@ -135,4 +136,19 @@ func (c *Collection) GetAllPricesInPeriodSymbol(from time.Time, to time.Time, sy
 	}
 
 	return prices, err
+}
+
+func (c *Collection) GetMostRecentPriceBySymbol(symbol string) (Prices, error) {
+	collection := c.instance.Database(c.database).Collection(c.collectionName)
+
+	filter := bson.D{{"symbol", symbol}}
+	opts := options.FindOne().SetSort(bson.M{"$natural": -1})
+
+	var lastRecord Prices
+	err := collection.FindOne(context.TODO(), filter, opts).Decode(&lastRecord)
+	if err != nil {
+		panic(err)
+	}
+
+	return lastRecord, err
 }

@@ -8,6 +8,13 @@ type PricesRepository interface {
 	StoreEntry(prices prices_repository.Prices) error
 }
 
+type StockPriceRepository interface {
+	//TODO: Add needed methods
+}
+type CryptoPriceRepository interface {
+	//TODO: Add needed methods
+}
+
 type Presenter struct {
 	pricesRepository PricesRepository
 }
