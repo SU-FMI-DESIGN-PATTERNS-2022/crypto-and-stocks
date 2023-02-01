@@ -17,7 +17,7 @@ func cryptoHandler(b []byte) {
 	if err := json.Unmarshal(b, &cryptoResponse); err != nil {
 		fmt.Println(err)
 	}
-
+	//TODO: Make a method that saves the response into the corresponding collection
 	fmt.Println(cryptoResponse)
 }
 
@@ -26,7 +26,7 @@ func stockHandler(b []byte) {
 	if err := json.Unmarshal(b, &stockResponse); err != nil {
 		fmt.Println(err)
 	}
-
+	//TODO: same here
 	fmt.Println(stockResponse)
 }
 
