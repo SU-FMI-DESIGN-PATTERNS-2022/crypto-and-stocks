@@ -7,6 +7,7 @@ import (
 
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/env"
 
+	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/database"
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/repositories/crypto_prices_repository"
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/stream"
 )
@@ -31,7 +32,7 @@ func stockHandler(b []byte) {
 
 func main() {
 	mongoConfig := env.LoadMongoConfig()
-	client, err := Connect(mongoConfig, Remote)
+	client, err := database.Connect(mongoConfig, database.Remote)
 
 	defer func() {
 		if err = client.Disconnect(context.TODO()); err != nil {
@@ -43,8 +44,8 @@ func main() {
 	// stockPricesCollection := stock_prices_repository.NewStockPricesCollection(client, mongoConfig.Database, "StockPrices")
 	// pricesPresenter := prices.NewPricesPresenter(cryptoPricesCollection, stockPricesCollection)
 	fmt.Println(cryptoPricesCollection.GetAllPrices())
-	// collection.StoreEntry(prices_repository.CryptoPrice{
-	// 	Prices: prices_repository.Prices{
+	// cryptoPricesCollection.StoreEntry(crypto_prices_repository.CryptoPrices{
+	// 	Prices: database.Prices{
 	// 		Symbol:   "BTC",
 	// 		BidPrice: 13452.23,
 	// 		BidSize:  0.0024,

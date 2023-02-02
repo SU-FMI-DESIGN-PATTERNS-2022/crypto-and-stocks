@@ -28,7 +28,7 @@ type MongoConfig struct {
 }
 
 func goDotEnvVariable(key string) string {
-	err := godotenv.Load("../../pkg/repository/mongo/env/.env")
+	err := godotenv.Load("./env/.env")
 
 	if err != nil {
 		log.Fatalf("Error loading .env file")

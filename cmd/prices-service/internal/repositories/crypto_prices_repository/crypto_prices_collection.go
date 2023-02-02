@@ -49,7 +49,7 @@ func (c *CryptoPricesCollection) GetAllPrices() ([]CryptoPrices, error) {
 func (c *CryptoPricesCollection) GetAllPricesBySymbol(symbol string) ([]CryptoPrices, error) {
 	collection := c.Instance.Database(c.Database).Collection(c.CollectionName)
 
-	filter := bson.D{{"symbol", symbol}}
+	filter := bson.D{primitive.E{Key: "symbol", Value: symbol}}
 
 	result, err := collection.Find(context.TODO(), filter)
 
@@ -67,7 +67,7 @@ func (c *CryptoPricesCollection) GetAllPricesBySymbol(symbol string) ([]CryptoPr
 func (c *CryptoPricesCollection) GetAllPricesByExchange(exchange string) ([]CryptoPrices, error) {
 	collection := c.Instance.Database(c.Database).Collection(c.CollectionName)
 
-	filter := bson.D{{"exchange", exchange}}
+	filter := bson.D{primitive.E{Key: "exchange", Value: exchange}}
 
 	result, err := collection.Find(context.TODO(), filter)
 
@@ -125,7 +125,7 @@ func (c *CryptoPricesCollection) GetAllPricesInPeriodSymbol(from time.Time, to t
 func (c *CryptoPricesCollection) GetMostRecentPriceBySymbol(symbol string) (CryptoPrices, error) {
 	collection := c.Instance.Database(c.Database).Collection(c.CollectionName)
 
-	filter := bson.D{{"symbol", symbol}}
+	filter := bson.D{primitive.E{Key: "symbol", Value: symbol}}
 	opts := options.FindOne().SetSort(bson.M{"$natural": -1})
 
 	var lastRecord CryptoPrices
