@@ -1,6 +1,6 @@
 package stock_prices_repository
 
-import "github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/database"
+import "github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/database"
 
 type StockPrices struct {
 	database.Prices

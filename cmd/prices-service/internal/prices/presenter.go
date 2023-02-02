@@ -3,8 +3,8 @@ package prices
 import (
 	"time"
 
-	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/repositories/crypto_prices_repository"
-	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/repositories/stock_prices_repository"
+	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/repositories/crypto_prices_repository"
+	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/repositories/stock_prices_repository"
 )
 
 type StockPriceRepository interface {

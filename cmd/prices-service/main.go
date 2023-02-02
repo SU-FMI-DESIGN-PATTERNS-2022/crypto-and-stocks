@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/env"
-
-	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/database"
-	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/repositories/crypto_prices_repository"
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/stream"
+	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/database"
+	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/env"
 )
 
 func cryptoHandler(b []byte) {
@@ -34,16 +32,20 @@ func main() {
 	mongoConfig := env.LoadMongoConfig()
 	client, err := database.Connect(mongoConfig, database.Remote)
 
+	if err != nil {
+		panic(err)
+	}
+
 	defer func() {
 		if err = client.Disconnect(context.TODO()); err != nil {
 			panic(err)
 		}
 	}()
 
-	cryptoPricesCollection := crypto_prices_repository.NewCryptoPricesCollection(client, mongoConfig.Database, "CryptoPrices")
+	// cryptoPricesCollection := crypto_prices_repository.NewCryptoPricesCollection(client, mongoConfig.Database, "CryptoPrices")
 	// stockPricesCollection := stock_prices_repository.NewStockPricesCollection(client, mongoConfig.Database, "StockPrices")
 	// pricesPresenter := prices.NewPricesPresenter(cryptoPricesCollection, stockPricesCollection)
-	fmt.Println(cryptoPricesCollection.GetAllPrices())
+	// fmt.Println(cryptoPricesCollection.GetAllPrices())
 	// cryptoPricesCollection.StoreEntry(crypto_prices_repository.CryptoPrices{
 	// 	Prices: database.Prices{
 	// 		Symbol:   "BTC",
