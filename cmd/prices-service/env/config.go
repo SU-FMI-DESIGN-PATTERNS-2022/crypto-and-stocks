@@ -1,10 +1,10 @@
 package env
 
 import (
-	"github.com/joho/godotenv"
 	"log"
 	"os"
-	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 type WebSocetConfig struct {
@@ -17,18 +17,18 @@ type WebSocetConfig struct {
 }
 
 type MongoConfig struct {
-	Driver   string
-	Host     string
-	Port     int
-	Database string
-	User     string
-	Password string
+	LocalDriver  string
+	RemoteDriver string
+	Host         string
+	Port         string
+	Database     string
+	User         string
+	Password     string
+	Options      string
 }
 
 func goDotEnvVariable(key string) string {
-
-	// load .env file
-	err := godotenv.Load(".env")
+	err := godotenv.Load("../../pkg/repository/mongo/env/.env")
 
 	if err != nil {
 		log.Fatalf("Error loading .env file")
@@ -39,22 +39,23 @@ func goDotEnvVariable(key string) string {
 
 func LoadMongoConfig() MongoConfig {
 	host := goDotEnvVariable("MONGO_HOST")
-	port, err := strconv.Atoi(goDotEnvVariable("MONGO_PORT"))
-	if err != nil {
-		panic(err)
-	}
-	driver := goDotEnvVariable("MONGO_DRIVER")
+	port := goDotEnvVariable("MONGO_PORT")
+	localDriver := goDotEnvVariable("MONGO_LOCAL_DRIVER")
+	remoteDriver := goDotEnvVariable("MONGO_REMOTE_DRIVER")
 	user := goDotEnvVariable("MONGO_USER")
 	database := goDotEnvVariable("MONGO_DATABASE")
 	password := goDotEnvVariable("MONGO_PASSWORD")
+	options := goDotEnvVariable("MONGO_OPTIONS")
 
 	return MongoConfig{
-		Driver:   driver,
-		Host:     host,
-		Port:     port,
-		User:     user,
-		Database: database,
-		Password: password,
+		LocalDriver:  localDriver,
+		RemoteDriver: remoteDriver,
+		Host:         host,
+		Port:         port,
+		User:         user,
+		Database:     database,
+		Password:     password,
+		Options:      options,
 	}
 }
 
