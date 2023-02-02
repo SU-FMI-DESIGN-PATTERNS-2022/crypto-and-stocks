@@ -1,7 +1,8 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
+	"fmt"
+	"net/http"
 
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/env"
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/order"
@@ -20,15 +21,27 @@ func main() {
 		panic(err)
 	}
 
+	serverConfig := env.LoadServerConfig()
+
 	orderRepository := order_repository.NewOrderTable(db)
 	userRepository := user_repository.NewUserTable(db)
 
 	orderPresenter := order.NewOrderPresenter(orderRepository, userRepository)
-	orderController := order.NewOrderController(orderPresenter)
+	orderHandler := order.NewOrderHandler(orderPresenter)
 
-	router := gin.Default()
+	// router := gin.Default()
 
-	order.SetupRoutes(router, orderController)
+	// order.SetupRoutes(router, orderController)
 
-	router.Run()
+	// router.Run()
+
+	mux := http.NewServeMux()
+
+	order.HandleRoutes(mux, orderHandler)
+
+	serverErr := http.ListenAndServe(fmt.Sprintf("localhost:%d", serverConfig.Port), mux)
+
+	if serverErr != nil {
+		panic(serverErr)
+	}
 }

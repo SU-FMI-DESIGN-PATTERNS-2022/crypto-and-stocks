@@ -21,6 +21,7 @@ type UserRepository interface {
 	CreateUser(userId int64, name string) error
 	CreateBot(creatorId int64, amount float64) error
 	GetUserById(id int64) (user_repository.User, error)
+	GetUserByUserId(id int64) (user_repository.User, error)
 	UpdateUserAmount(id int64, amount float64) error
 	DeleteUserById(id int64) error
 }
@@ -38,7 +39,7 @@ func NewOrderPresenter(orderRepo OrderRepository, userRepo UserRepository) Order
 }
 
 func (orderPresenter *OrderPresenter) CreateUser(userId int64, name string) error {
-	_, err := orderPresenter.userRepo.GetUserById(userId)
+	_, err := orderPresenter.userRepo.GetUserByUserId(userId)
 
 	if err == nil {
 		return errors.New("User with this id already exists")

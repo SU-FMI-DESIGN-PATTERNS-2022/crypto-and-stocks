@@ -19,7 +19,7 @@ func NewOrderTable(db *sqlx.DB) *OrderTable {
 }
 
 func (table *OrderTable) getOrderRequest(query string, args ...any) ([]Order, error) {
-	var orders []Order
+	orders := make([]Order, 0)
 	err := table.instance.Select(&orders, query, args...)
 
 	return orders, err

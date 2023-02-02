@@ -16,6 +16,10 @@ type DBConfig struct {
 	DBName   string
 }
 
+type ServerConfig struct {
+	Port int
+}
+
 func goDotEnvVariable(key string) string {
 	err := godotenv.Load("./env/.env")
 
@@ -41,5 +45,15 @@ func LoadDBConfig() DBConfig {
 		User:     dbuser,
 		Password: password,
 		DBName:   dbname,
+	}
+}
+
+func LoadServerConfig() ServerConfig {
+	port, err := strconv.Atoi(goDotEnvVariable("SERVER_PORT"))
+	if err != nil {
+		panic(err)
+	}
+	return ServerConfig{
+		Port: port,
 	}
 }

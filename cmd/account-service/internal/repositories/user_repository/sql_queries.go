@@ -11,6 +11,9 @@ VALUES($1,$2,$3,$4,$5)`
 const selectUserWhereIdSQL = `
 SELECT * FROM "users" WHERE "id"=$1`
 
+const selectUserWhereUserIdSQL = `
+SELECT * FROM "users" WHERE "user_id"=$1`
+
 const updateUserAmountSQL = `
 UPDATE "users" SET "amount"=$1 WHERE "id"=$2`
 
