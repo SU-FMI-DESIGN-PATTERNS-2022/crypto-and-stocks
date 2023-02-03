@@ -11,23 +11,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type Collection struct {
+type Collection[Prices CryptoPrices | StockPrices] struct {
 	instance       *mongo.Client
 	database       string
 	collectionName string
 }
 
-//TODO: Make a new collection for CryptoPricesCollection and StockPricesCollection
-
-func NewCollection(client *mongo.Client, db string, col string) *Collection {
-	return &Collection{
+func NewCollection[Prices CryptoPrices | StockPrices](client *mongo.Client, db string, col string) *Collection[Prices] {
+	return &Collection[Prices]{
 		instance:       client,
 		database:       db,
 		collectionName: col,
 	}
 }
 
-func (c *Collection) insertOne(col string, doc interface{}) (*mongo.InsertOneResult, error) {
+func (c *Collection[Prices]) insertOne(col string, doc interface{}) (*mongo.InsertOneResult, error) {
 
 	collection := c.instance.Database(c.database).Collection(col)
 
@@ -36,7 +34,7 @@ func (c *Collection) insertOne(col string, doc interface{}) (*mongo.InsertOneRes
 }
 
 // TODO: Yet to be used
-func (c *Collection) insertMany(col string, docs []interface{}) (*mongo.InsertManyResult, error) {
+func (c *Collection[Prices]) insertMany(col string, docs []interface{}) (*mongo.InsertManyResult, error) {
 
 	collection := c.instance.Database(c.database).Collection(col)
 
@@ -44,12 +42,12 @@ func (c *Collection) insertMany(col string, docs []interface{}) (*mongo.InsertMa
 	return result, err
 }
 
-func (c *Collection) StoreEntry(price Prices) error {
+func (c *Collection[Prices]) StoreEntry(price Prices) error {
 	_, err := c.insertOne(c.collectionName, price)
 	return err
 }
 
-func (c *Collection) GetAllPrices() ([]Prices, error) {
+func (c *Collection[Prices]) GetAllPrices() ([]Prices, error) {
 	collection := c.instance.Database(c.database).Collection(c.collectionName)
 
 	result, err := collection.Find(context.TODO(), bson.D{})
@@ -65,10 +63,10 @@ func (c *Collection) GetAllPrices() ([]Prices, error) {
 	return prices, err
 }
 
-func (c *Collection) GetAllPricesBySymbol(symbol string) ([]Prices, error) {
+func (c *Collection[Prices]) GetAllPricesBySymbol(symbol string) ([]Prices, error) {
 	collection := c.instance.Database(c.database).Collection(c.collectionName)
 
-	filter := bson.D{{"symbol", symbol}}
+	filter := bson.D{primitive.E{Key: "symbol", Value: symbol}}
 
 	result, err := collection.Find(context.TODO(), filter)
 
@@ -83,10 +81,10 @@ func (c *Collection) GetAllPricesBySymbol(symbol string) ([]Prices, error) {
 	return prices, err
 }
 
-func (c *Collection) GetAllPricesByExchange(exchange string) ([]Prices, error) {
+func (c *Collection[Prices]) GetAllPricesByExchange(exchange string) ([]Prices, error) {
 	collection := c.instance.Database(c.database).Collection(c.collectionName)
 
-	filter := bson.D{{"exchange", exchange}}
+	filter := bson.D{primitive.E{Key: "exchange", Value: exchange}}
 
 	result, err := collection.Find(context.TODO(), filter)
 
@@ -103,7 +101,7 @@ func (c *Collection) GetAllPricesByExchange(exchange string) ([]Prices, error) {
 	return prices, err
 }
 
-func (c *Collection) GetAllPricesInPeriod(from time.Time, to time.Time) ([]Prices, error) {
+func (c *Collection[Prices]) GetAllPricesInPeriod(from time.Time, to time.Time) ([]Prices, error) {
 	collection := c.instance.Database(c.database).Collection(c.collectionName)
 
 	filter := bson.M{"date": bson.M{
@@ -121,7 +119,7 @@ func (c *Collection) GetAllPricesInPeriod(from time.Time, to time.Time) ([]Price
 	return prices, err
 }
 
-func (c *Collection) GetAllPricesInPeriodSymbol(from time.Time, to time.Time, symbol string) ([]Prices, error) {
+func (c *Collection[Prices]) GetAllPricesInPeriodSymbol(from time.Time, to time.Time, symbol string) ([]Prices, error) {
 	collection := c.instance.Database(c.database).Collection(c.collectionName)
 
 	filter := bson.M{"date": bson.M{
@@ -141,10 +139,10 @@ func (c *Collection) GetAllPricesInPeriodSymbol(from time.Time, to time.Time, sy
 	return prices, err
 }
 
-func (c *Collection) GetMostRecentPriceBySymbol(symbol string) (Prices, error) {
+func (c *Collection[Prices]) GetMostRecentPriceBySymbol(symbol string) (Prices, error) {
 	collection := c.instance.Database(c.database).Collection(c.collectionName)
 
-	filter := bson.D{{"symbol", symbol}}
+	filter := bson.D{primitive.E{Key: "symbol", Value: symbol}}
 	opts := options.FindOne().SetSort(bson.M{"$natural": -1})
 
 	var lastRecord Prices
@@ -155,21 +153,3 @@ func (c *Collection) GetMostRecentPriceBySymbol(symbol string) (Prices, error) {
 
 	return lastRecord, err
 }
-
-// type Collection struct {
-// 	Instance       *mongo.Client
-// 	Database       string
-// 	CollectionName string
-// }
-
-// func (c *Collection) InsertOne(col string, doc interface{}) (*mongo.InsertOneResult, error) {
-// 	collection := c.Instance.Database(c.Database).Collection(col)
-
-// 	return collection.InsertOne(context.TODO(), doc)
-// }
-
-// func (c *Collection) InsertMany(col string, docs []interface{}) (*mongo.InsertManyResult, error) {
-// 	collection := c.Instance.Database(c.Database).Collection(col)
-
-// 	return collection.InsertMany(context.TODO(), docs)
-// }

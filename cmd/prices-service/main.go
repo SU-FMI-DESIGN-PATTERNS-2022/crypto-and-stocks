@@ -42,21 +42,19 @@ func main() {
 		}
 	}()
 
-	// cryptoPricesCollection := crypto_prices_repository.NewCryptoPricesCollection(client, mongoConfig.Database, "CryptoPrices")
-	// stockPricesCollection := stock_prices_repository.NewStockPricesCollection(client, mongoConfig.Database, "StockPrices")
-	// pricesPresenter := prices.NewPricesPresenter(cryptoPricesCollection, stockPricesCollection)
-	// fmt.Println(cryptoPricesCollection.GetAllPrices())
-	// cryptoPricesCollection.StoreEntry(crypto_prices_repository.CryptoPrices{
+	cryptoPricesCollection := database.NewCollection[database.CryptoPrices](client, mongoConfig.Database, "CryptoPrices")
+	// cryptoPricesCollection.StoreEntry(database.CryptoPrices{
 	// 	Prices: database.Prices{
 	// 		Symbol:   "BTC",
-	// 		BidPrice: 13452.23,
-	// 		BidSize:  0.0024,
-	// 		AskPrice: 13452.23,
-	// 		AskSize:  0.0024,
+	// 		BidPrice: 15728.36,
+	// 		BidSize:  0.0472,
+	// 		AskPrice: 15701.92,
+	// 		AskSize:  0.0453,
 	// 		Date:     time.Now(),
 	// 	},
-	// 	Exchange: "Binance",
+	// 	Exchange: "Nexo",
 	// })
+	fmt.Println(cryptoPricesCollection.GetAllPrices())
 
 	//===============================================================================================
 	// wsConfig := env.LoadWebSocetConfig()
