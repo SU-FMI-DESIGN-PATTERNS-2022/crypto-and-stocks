@@ -2,11 +2,12 @@ package prices_repository
 
 import (
 	"context"
+	"time"
+
 	_ "github.com/lib/pq"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"time"
 )
 
 type Collection struct {
@@ -41,6 +42,14 @@ func (c *Collection) insertMany(col string, docs []interface{}) (*mongo.InsertMa
 }
 
 func (c *Collection) StoreEntry(price Prices) error {
+	_, err := c.insertOne(c.collectionName, price)
+	return err
+}
+func (c *Collection) StoreStockPrice(price StockPrice) error {
+	_, err := c.insertOne(c.collectionName, price)
+	return err
+}
+func (c *Collection) StoreCryptoPrice(price CryptoPrice) error {
 	_, err := c.insertOne(c.collectionName, price)
 	return err
 }

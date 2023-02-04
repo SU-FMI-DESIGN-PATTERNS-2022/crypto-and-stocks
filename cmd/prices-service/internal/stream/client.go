@@ -4,8 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/env"
 	"github.com/gorilla/websocket"
 )
+
+func NewStreamConfig(wsConfig env.WebSocetConfig) StreamConfig {
+	return StreamConfig{
+		URL:    wsConfig.CryptoURL,
+		Quotes: wsConfig.CryptoQuotes,
+		Key:    wsConfig.Key,
+		Secret: wsConfig.Secret,
+	}
+}
 
 type StreamConfig struct {
 	URL    string
