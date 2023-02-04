@@ -1,10 +1,10 @@
 package env
 
 import (
-	"github.com/joho/godotenv"
 	"log"
 	"os"
-	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 type WebSocetConfig struct {
@@ -19,7 +19,7 @@ type WebSocetConfig struct {
 type MongoConfig struct {
 	Driver   string
 	Host     string
-	Port     int
+	Port     string
 	Database string
 	User     string
 	Password string
@@ -39,10 +39,8 @@ func goDotEnvVariable(key string) string {
 
 func LoadMongoConfig() MongoConfig {
 	host := goDotEnvVariable("MONGO_HOST")
-	port, err := strconv.Atoi(goDotEnvVariable("MONGO_PORT"))
-	if err != nil {
-		panic(err)
-	}
+	port := goDotEnvVariable("MONGO_PORT")
+
 	driver := goDotEnvVariable("MONGO_DRIVER")
 	user := goDotEnvVariable("MONGO_USER")
 	database := goDotEnvVariable("MONGO_DATABASE")
