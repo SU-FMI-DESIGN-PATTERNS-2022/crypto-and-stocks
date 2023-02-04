@@ -22,6 +22,7 @@ var (
 	createUserExpr                 = regexp.MustCompile(`^\/create\/user$`)
 	createBotExpr                  = regexp.MustCompile(`^\/create\/bot$`)
 	mergeUserAndBotExpr            = regexp.MustCompile(`^\/merge$`)
+	estimateUserAmountExpr         = regexp.MustCompile(`^\/user\/amount\/(?P<Param>\w+)$`)
 )
 
 func NewOrderHandler(orderPresenter OrderPresenter) OrderHandler {
@@ -233,5 +234,22 @@ func (handler *OrderHandler) MergeUserAndBot(res http.ResponseWriter, req *http.
 }
 
 func (handler *OrderHandler) EstimateUserAmount(res http.ResponseWriter, req *http.Request) {
-	//TODO:
+	res.Header().Set("Content-type", "application/json")
+	if !estimateUserAmountExpr.MatchString(req.URL.Path) {
+		handler.notFound(res, req)
+		return
+	}
+
+	idParam := estimateUserAmountExpr.FindStringSubmatch(req.URL.Path)
+	id, err := strconv.ParseInt(idParam[1], 10, 64)
+	if err != nil {
+		handler.badRequest(res, req, "Parameter id should be number")
+		return
+	}
+	amount, err := handler.presenter.EstimateUserAmount(id)
+	if err != nil {
+		handler.internalServerError(res, req, "internal server error")
+		return
+	}
+	handler.success(res, req, map[string]float64{"amount": amount})
 }

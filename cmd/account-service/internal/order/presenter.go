@@ -2,6 +2,7 @@ package order
 
 import (
 	"errors"
+	"fmt"
 	"math"
 
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/repositories/order_repository"
@@ -42,7 +43,7 @@ func (orderPresenter *OrderPresenter) CreateUser(userId int64, name string) erro
 	_, err := orderPresenter.userRepo.GetUserByUserId(userId)
 
 	if err == nil {
-		return errors.New("User with this id already exists")
+		return errors.New("user with this id already exists")
 	}
 
 	return orderPresenter.userRepo.CreateUser(userId, name)
@@ -55,11 +56,11 @@ func (orderPresenter *OrderPresenter) CreateBot(creatorId int64, amount float64)
 	}
 
 	if user.Amount < amount {
-		return errors.New("Could not create bot! Insufficient amount!")
+		return errors.New("could not create bot! Insufficient amount")
 	}
 
 	if user.IsBot {
-		return errors.New("Bots can't have their own bots!")
+		return errors.New("bots can't have their own bots")
 	}
 
 	err := orderPresenter.userRepo.UpdateUserAmount(creatorId, math.Round((user.Amount-amount)*100)/100)
@@ -118,7 +119,7 @@ func (orderPresenter *OrderPresenter) MergeUserAndBot(botId int64) error {
 	}
 
 	if !bot.IsBot {
-		return errors.New("Can't merge 2 users - one must be bot")
+		return errors.New("can't merge 2 users - one must be bot")
 	}
 
 	user, userErr := orderPresenter.userRepo.GetUserById(bot.CreatorID.Int64)
@@ -137,4 +138,24 @@ func (orderPresenter *OrderPresenter) MergeUserAndBot(botId int64) error {
 	}
 
 	return orderPresenter.userRepo.DeleteUserById(bot.ID)
+}
+
+func (orderPresenter *OrderPresenter) EstimateUserAmount(userId int64) (float64, error) {
+	orders, err := orderPresenter.orderRepo.GetAllOrdersByUserId(userId)
+	if err != nil {
+		return 0, err
+	}
+
+	quantityMap := make(map[string]float64)
+	for _, o := range orders {
+		if o.Type == "buy" {
+			quantityMap[o.Symbol] += o.Amount
+		} else {
+			quantityMap[o.Symbol] -= o.Amount
+		}
+	}
+
+	//TODO: fetch most recent price for each symbol in quantityMap
+	fmt.Println(quantityMap)
+	return 0, nil
 }

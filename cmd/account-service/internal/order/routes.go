@@ -10,5 +10,5 @@ func HandleRoutes(mux *http.ServeMux, handler OrderHandler) {
 	mux.HandleFunc("/create/user", handler.CreateUser)
 	mux.HandleFunc("/create/bot", handler.CreateBot)
 	mux.HandleFunc("/merge", handler.MergeUserAndBot)
-	mux.HandleFunc("/user/amount", handler.EstimateUserAmount)
+	mux.HandleFunc("/user/amount/", handler.EstimateUserAmount)
 }
