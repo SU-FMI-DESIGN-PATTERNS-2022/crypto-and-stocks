@@ -3,13 +3,20 @@ package mongo
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/env"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"strconv"
-	"time"
 )
+
+func createConnectionUrl(cfg env.MongoConfig) string {
+	if cfg.Port == "" {
+		return cfg.Driver + "://" + cfg.User + ":" + cfg.Password + "@" + cfg.Host
+	}
+	return cfg.Driver + "://" + cfg.User + ":" + cfg.Password + "@" + cfg.Host + ":" + cfg.Port
+}
 
 // Connect Connects The Go app with a MongoDb database
 func Connect(mongoConfig env.MongoConfig) (*mongo.Client, context.CancelFunc, error) {
@@ -18,8 +25,7 @@ func Connect(mongoConfig env.MongoConfig) (*mongo.Client, context.CancelFunc, er
 		30*time.Second)
 
 	// mongo.Connect return mongo.Client method
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(
-		mongoConfig.Driver+"://"+mongoConfig.User+":"+mongoConfig.Password+"@"+mongoConfig.Host+":"+strconv.FormatInt(int64(mongoConfig.Port), 10)))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(createConnectionUrl(mongoConfig)))
 	return client, cancel, err
 }
 
