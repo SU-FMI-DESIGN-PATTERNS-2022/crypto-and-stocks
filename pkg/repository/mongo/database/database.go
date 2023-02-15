@@ -142,14 +142,11 @@ func (c *Collection[Prices]) GetAllPricesInPeriodSymbol(from time.Time, to time.
 func (c *Collection[Prices]) GetMostRecentPriceBySymbol(symbol string) (Prices, error) {
 	collection := c.instance.Database(c.database).Collection(c.collectionName)
 
-	filter := bson.D{primitive.E{Key: "symbol", Value: symbol}}
+	filter := bson.D{primitive.E{Key: "prices.symbol", Value: symbol}}
 	opts := options.FindOne().SetSort(bson.M{"$natural": -1})
 
 	var lastRecord Prices
 	err := collection.FindOne(context.TODO(), filter, opts).Decode(&lastRecord)
-	if err != nil {
-		panic(err)
-	}
 
 	return lastRecord, err
 }
