@@ -7,15 +7,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type WebSocetConfig struct {
-	CryptoURL    string
-	StockURL     string
-	CryptoQuotes []string
-	StockQuotes  []string
-	Key          string
-	Secret       string
-}
-
 type MongoConfig struct {
 	LocalDriver  string
 	RemoteDriver string
@@ -56,18 +47,5 @@ func LoadMongoConfig() MongoConfig {
 		Database:     database,
 		Password:     password,
 		Options:      options,
-	}
-}
-
-func LoadWebSocetConfig() WebSocetConfig {
-	key := goDotEnvVariable("KEY")
-	secret := goDotEnvVariable("SECRET")
-	return WebSocetConfig{
-		CryptoURL:    "wss://stream.data.alpaca.markets/v1beta1/crypto",
-		StockURL:     "wss://stream.data.alpaca.markets/v2/iex",
-		CryptoQuotes: []string{"BTCUSD", "ETHUSD", "ADAUSD", "DOTUSD", "USDTUSD", "SOLUSD", "MATICUSD", "LINKUSD", "ATOMUSD", "BMBUSD", "LTCUSD"},
-		StockQuotes:  []string{"AAPL", "AMZN"},
-		Key:          key,
-		Secret:       secret,
 	}
 }
