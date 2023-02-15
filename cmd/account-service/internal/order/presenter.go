@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"math"
 
+	"net/http"
+
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/repositories/order_repository"
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/repositories/user_repository"
+	"github.com/gorilla/websocket"
 )
 
 type OrderRepository interface {
-	StoreOrder(userId int64, orderType string, symbol string, amount float64, price float64) error
+	StoreOrder(order order_repository.Order) error
 	GetAllOrders() ([]order_repository.Order, error)
 	GetAllOrdersByUserId(userId int64) ([]order_repository.Order, error)
 	GetAllOrdersBySymbol(symbol string) ([]order_repository.Order, error)
@@ -27,16 +30,26 @@ type UserRepository interface {
 	DeleteUserById(id int64) error
 }
 
+type Upgrader interface {
+	Upgrade(w http.ResponseWriter, r *http.Request, responseHeader http.Header) (*websocket.Conn, error)
+}
+
 type OrderPresenter struct {
 	orderRepo OrderRepository
 	userRepo  UserRepository
+	upgrader  Upgrader
 }
 
-func NewOrderPresenter(orderRepo OrderRepository, userRepo UserRepository) OrderPresenter {
+func NewOrderPresenter(orderRepo OrderRepository, userRepo UserRepository, upgrader Upgrader) OrderPresenter {
 	return OrderPresenter{
 		orderRepo: orderRepo,
 		userRepo:  userRepo,
+		upgrader:  upgrader,
 	}
+}
+
+func (orderPresenter *OrderPresenter) StoreOrder(order order_repository.Order) error {
+	return orderPresenter.orderRepo.StoreOrder(order)
 }
 
 func (orderPresenter *OrderPresenter) CreateUser(userId int64, name string) error {

@@ -1,9 +1,6 @@
 package order_repository
 
 import (
-	"strconv"
-	"time"
-
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
@@ -25,14 +22,14 @@ func (table *OrderTable) getOrderRequest(query string, args ...any) ([]Order, er
 	return orders, err
 }
 
-func (table *OrderTable) StoreOrder(userId int64, orderType string, symbol string, amount float64, price float64) error {
+func (table *OrderTable) StoreOrder(order Order) error {
 	_, err := table.instance.Exec(insertSQL,
-		userId,
-		orderType,
-		symbol,
-		strconv.FormatFloat(amount, 'E', -1, 64),
-		strconv.FormatFloat(price, 'E', -1, 64),
-		time.Now(),
+		order.UserID,
+		order.Type,
+		order.Symbol,
+		order.Amount,
+		order.Price,
+		order.Date,
 	)
 
 	return err

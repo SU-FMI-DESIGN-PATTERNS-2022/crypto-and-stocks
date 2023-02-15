@@ -1,9 +1,10 @@
 package env
 
 import (
-	"github.com/joho/godotenv"
 	"log"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type WebSocetConfig struct {
@@ -16,9 +17,7 @@ type WebSocetConfig struct {
 }
 
 func goDotEnvVariable(key string) string {
-
-	// load .env file
-	err := godotenv.Load(".env")
+	err := godotenv.Load("../../pkg/repository/mongo/env/.env")
 
 	if err != nil {
 		log.Fatalf("Error loading .env file")

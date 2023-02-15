@@ -2,9 +2,13 @@ package order
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
+
+	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/repositories/order_repository"
+	"github.com/gorilla/websocket"
 )
 
 type OrderHandler struct {
@@ -252,4 +256,37 @@ func (handler *OrderHandler) EstimateUserAmount(res http.ResponseWriter, req *ht
 		return
 	}
 	handler.success(res, req, map[string]float64{"amount": amount})
+}
+
+func (handler *OrderHandler) StoreOrder(res http.ResponseWriter, req *http.Request) {
+	conn, err := handler.presenter.upgrader.Upgrade(res, req, nil)
+
+	if err != nil {
+		fmt.Println("Failed to upgrade connection:", err)
+		return
+	}
+
+	defer conn.Close()
+
+	for {
+		_, message, err := conn.ReadMessage() // json format
+		if err != nil {
+			fmt.Println("Failed to read message:", err)
+			conn.WriteMessage(websocket.TextMessage, []byte("Hello, something is wrong."))
+			break
+		}
+		// deserialize to struct Order
+		var order order_repository.Order
+		if err := json.Unmarshal(message, &order); err != nil {
+			fmt.Println(string(message))
+			fmt.Println("Failed to unmarshal message:", err)
+			conn.WriteMessage(websocket.TextMessage, []byte("The message is not in right json object structure."))
+			break
+		}
+		if err := handler.presenter.StoreOrder(order); err != nil {
+			fmt.Println("Failed to store order:", err)
+			conn.WriteMessage(websocket.TextMessage, []byte("We have a problem with storing your order."))
+			break
+		}
+	}
 }
