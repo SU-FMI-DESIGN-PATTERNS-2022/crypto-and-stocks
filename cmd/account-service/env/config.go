@@ -1,10 +1,11 @@
 package env
 
 import (
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 type DBConfig struct {
@@ -15,10 +16,12 @@ type DBConfig struct {
 	DBName   string
 }
 
-func goDotEnvVariable(key string) string {
+type ServerConfig struct {
+	Port int
+}
 
-	// load .env file
-	err := godotenv.Load(".env")
+func goDotEnvVariable(key string) string {
+	err := godotenv.Load("./env/.env")
 
 	if err != nil {
 		log.Fatalf("Error loading .env file")
@@ -29,7 +32,7 @@ func goDotEnvVariable(key string) string {
 
 func LoadDBConfig() DBConfig {
 	host := goDotEnvVariable("HOST")
-	port, err := strconv.Atoi(goDotEnvVariable("PORT"))
+	port, err := strconv.Atoi(goDotEnvVariable("DBPORT"))
 	if err != nil {
 		panic(err)
 	}
@@ -42,5 +45,15 @@ func LoadDBConfig() DBConfig {
 		User:     dbuser,
 		Password: password,
 		DBName:   dbname,
+	}
+}
+
+func LoadServerConfig() ServerConfig {
+	port, err := strconv.Atoi(goDotEnvVariable("SERVER_PORT"))
+	if err != nil {
+		panic(err)
+	}
+	return ServerConfig{
+		Port: port,
 	}
 }

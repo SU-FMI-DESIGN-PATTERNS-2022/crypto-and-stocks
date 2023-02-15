@@ -1,75 +1,57 @@
 package order_repository
 
 import (
-	"database/sql"
-	"strconv"
-
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
 type OrderTable struct {
-	instance *sql.DB
+	instance *sqlx.DB
 }
 
-func NewOrderTable(db *sql.DB) *OrderTable {
+func NewOrderTable(db *sqlx.DB) *OrderTable {
 	return &OrderTable{
 		instance: db,
 	}
 }
 
-func (db *OrderTable) getOrderRequest(query string, args ...any) ([]Order, error) {
-	rows, err := db.instance.Query(query, args...)
+func (table *OrderTable) getOrderRequest(query string, args ...any) ([]Order, error) {
+	orders := make([]Order, 0)
+	err := table.instance.Select(&orders, query, args...)
 
-	defer rows.Close()
-
-	var orders []Order
-	for rows.Next() {
-		var order Order
-		err := rows.Scan(
-			&order.ID,
-			&order.UserID,
-			&order.Type,
-			&order.Symbol,
-			&order.Amount,
-			&order.Price,
-			&order.Date,
-		)
-
-		if err != nil {
-			return nil, err
-		}
-
-		orders = append(orders, order)
-	}
-
-	if rows.Err() != nil {
-		return nil, err
-	}
-
-	return orders, nil
+	return orders, err
 }
 
-func (db *OrderTable) StoreOrder(order Order) error {
-	_, err := db.instance.Exec(insertSQL,
+func (table *OrderTable) StoreOrder(order Order) error {
+	_, err := table.instance.Exec(insertSQL,
 		order.UserID,
 		order.Type,
 		order.Symbol,
-		strconv.FormatFloat(order.Amount, 'E', -1, 64),
-		strconv.FormatFloat(order.Price, 'E', -1, 64),
-		order.Date.Format("2006-1-2"),
+		order.Amount,
+		order.Price,
+		order.Date,
 	)
 
 	return err
 }
 
-func (db *OrderTable) GetAllOrders() ([]Order, error) {
-	return db.getOrderRequest(selectAllSQL)
+func (table *OrderTable) UpdateOrdersCreatorByUserId(prevUserId int64, newUserId int64) error {
+	_, err := table.instance.Exec(updateOrdersAfterMergeSQL, newUserId, prevUserId)
+	return err
 }
 
-func (db *OrderTable) GetAllOrdersBySymbol(symbol string) ([]Order, error) {
-	return db.getOrderRequest(selectAllWhereSymbolSQL, symbol)
+func (table *OrderTable) GetAllOrders() ([]Order, error) {
+	return table.getOrderRequest(selectAllSQL)
 }
 
-func (db *OrderTable) GetAllOrdersByUserId(userId int64) ([]Order, error) {
-	return db.getOrderRequest(selectAllWhereUserIdSQL, userId)
+func (table *OrderTable) GetAllOrdersBySymbol(symbol string) ([]Order, error) {
+	return table.getOrderRequest(selectAllWhereSymbolSQL, symbol)
+}
+
+func (table *OrderTable) GetAllOrdersByUserId(userId int64) ([]Order, error) {
+	return table.getOrderRequest(selectAllWhereUserIdSQL, userId)
+}
+
+func (table *OrderTable) GetAllOrdersByUserIdAndSymbol(userId int64, symbol string) ([]Order, error) {
+	return table.getOrderRequest(selectAllWhereUserIdAndSymbolSQL, userId, symbol)
 }

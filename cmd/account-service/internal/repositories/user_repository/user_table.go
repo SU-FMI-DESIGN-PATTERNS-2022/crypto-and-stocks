@@ -1,27 +1,24 @@
 package user_repository
 
 import (
-	"database/sql"
-
-	"github.com/lib/pq"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
 type UserTable struct {
-	instance *sql.DB
+	instance *sqlx.DB
 }
 
-func NewUserTable(db *sql.DB) *UserTable {
+func NewUserTable(db *sqlx.DB) *UserTable {
 	return &UserTable{
 		instance: db,
 	}
 }
 
-func (db *UserTable) CreateUser(userId int64, name string) error {
-	_, err := db.instance.Exec(createUserSQL,
+func (table *UserTable) CreateUser(userId int64, name string) error {
+	_, err := table.instance.Exec(createUserSQL,
 		userId,
 		name,
-		pq.Array(make([]int64, 0)),
 		false,
 		nil,
 		0,
@@ -30,84 +27,46 @@ func (db *UserTable) CreateUser(userId int64, name string) error {
 	return err
 }
 
-func (db *UserTable) CreateBot(creatorID int64, amount float64) error {
-	_, err := db.instance.Exec(createBotSQL,
+func (table *UserTable) GetUserById(id int64) (User, error) {
+	var user User
+	err := table.instance.Get(&user, selectUserWhereIdSQL, id)
+
+	if err != nil {
+		return User{}, err
+	}
+
+	return user, nil
+}
+
+func (table *UserTable) GetUserByUserId(id int64) (User, error) {
+	var user User
+	err := table.instance.Get(&user, selectUserWhereUserIdSQL, id)
+
+	if err != nil {
+		return User{}, err
+	}
+
+	return user, nil
+}
+
+func (table *UserTable) CreateBot(creatorID int64, amount float64) error {
+	_, err := table.instance.Exec(createBotSQL,
 		nil,
 		nil,
-		pq.Array(make([]int64, 0)),
 		true,
-		nil,
+		creatorID,
 		amount,
 	)
 
 	return err
 }
 
-func (db *UserTable) AddOrder(userId int64, orderId int64) error {
-	row := db.instance.QueryRow(selectOrdersWhereIdSQL, userId)
-	var orders []int64
-	ordersErr := row.Scan(pq.Array(&orders))
-
-	if ordersErr != nil || row.Err() != nil {
-		return ordersErr
-	}
-
-	orders = append(orders, orderId)
-	_, updateErr := db.instance.Exec(updateUserOrdersWhereIdSQL, pq.Array(orders), userId)
-
-	return updateErr
+func (table *UserTable) UpdateUserAmount(id int64, amount float64) error {
+	_, err := table.instance.Exec(updateUserAmountSQL, amount, id)
+	return err
 }
 
-func (db *UserTable) MergeUserOrders(id int64) error {
-	rows, err := db.instance.Query(selectAllWhereCreatorIdSQL, id)
-
-	defer rows.Close()
-
-	var users []User
-	for rows.Next() {
-		var user User
-		err := rows.Scan(
-			&user.ID,
-			&user.Name,
-			pq.Array(&user.Orders),
-			&user.IsBot,
-			&user.CreatorID,
-			&user.Amount,
-		)
-
-		if err != nil {
-
-			return err
-		}
-
-		users = append(users, user)
-	}
-
-	if rows.Err() != nil {
-		return err
-	}
-
-	var orders []int64
-	for _, u := range users {
-		orders = append(orders, u.Orders...)
-		_, deleteErr := db.instance.Exec(deleteUserWhereIdSQL, u.ID)
-
-		if deleteErr != nil {
-			return deleteErr
-		}
-	}
-
-	row := db.instance.QueryRow(selectOrdersWhereIdSQL, id)
-	var userOrders []int64
-	ordersErr := row.Scan(pq.Array(&userOrders))
-
-	if ordersErr != nil || row.Err() != nil {
-		return ordersErr
-	}
-
-	orders = append(orders, userOrders...)
-
-	_, updateErr := db.instance.Exec(updateUserOrdersWhereIdSQL, pq.Array(orders), id)
-
-	return updateErr
+func (table *UserTable) DeleteUserById(id int64) error {
+	_, deleteErr := table.instance.Exec(deleteUserWhereIdSQL, id)
+	return deleteErr
 }

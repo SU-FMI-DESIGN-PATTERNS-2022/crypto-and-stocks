@@ -1,11 +1,15 @@
 package order
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/repositories/order_repository"
-	"github.com/gorilla/websocket"
+	"math"
+
 	"net/http"
+
+	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/repositories/order_repository"
+	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/repositories/user_repository"
+	"github.com/gorilla/websocket"
 )
 
 type OrderRepository interface {
@@ -13,61 +17,158 @@ type OrderRepository interface {
 	GetAllOrders() ([]order_repository.Order, error)
 	GetAllOrdersByUserId(userId int64) ([]order_repository.Order, error)
 	GetAllOrdersBySymbol(symbol string) ([]order_repository.Order, error)
+	GetAllOrdersByUserIdAndSymbol(userId int64, symbol string) ([]order_repository.Order, error)
+	UpdateOrdersCreatorByUserId(prevUserId int64, newUserId int64) error
 }
 
 type UserRepository interface {
 	CreateUser(userId int64, name string) error
-	CreateBot(creatorID int64, amount float64) error
-	AddOrder(userId int64, orderId int64) error
-	MergeUserOrders(id int64) error
+	CreateBot(creatorId int64, amount float64) error
+	GetUserById(id int64) (user_repository.User, error)
+	GetUserByUserId(id int64) (user_repository.User, error)
+	UpdateUserAmount(id int64, amount float64) error
+	DeleteUserById(id int64) error
 }
 
 type Upgrader interface {
 	Upgrade(w http.ResponseWriter, r *http.Request, responseHeader http.Header) (*websocket.Conn, error)
 }
 
-type Presenter struct {
+type OrderPresenter struct {
 	orderRepo OrderRepository
 	userRepo  UserRepository
 	upgrader  Upgrader
 }
 
-func NewPresenter(orderRepo OrderRepository, userRepo UserRepository, upgrader Upgrader) Presenter {
-	return Presenter{
+func NewOrderPresenter(orderRepo OrderRepository, userRepo UserRepository, upgrader Upgrader) OrderPresenter {
+	return OrderPresenter{
 		orderRepo: orderRepo,
 		userRepo:  userRepo,
 		upgrader:  upgrader,
 	}
 }
 
-func (p *Presenter) StoreOrder(w http.ResponseWriter, r *http.Request) {
-	conn, err := p.upgrader.Upgrade(w, r, nil)
+func (orderPresenter *OrderPresenter) StoreOrder(order order_repository.Order) error {
+	return orderPresenter.orderRepo.StoreOrder(order)
+}
+
+func (orderPresenter *OrderPresenter) CreateUser(userId int64, name string) error {
+	_, err := orderPresenter.userRepo.GetUserByUserId(userId)
+
+	if err == nil {
+		return errors.New("user with this id already exists")
+	}
+
+	return orderPresenter.userRepo.CreateUser(userId, name)
+}
+
+func (orderPresenter *OrderPresenter) CreateBot(creatorId int64, amount float64) error {
+	user, userErr := orderPresenter.userRepo.GetUserById(creatorId)
+	if userErr != nil {
+		return userErr
+	}
+
+	if user.Amount < amount {
+		return errors.New("could not create bot! Insufficient amount")
+	}
+
+	if user.IsBot {
+		return errors.New("bots can't have their own bots")
+	}
+
+	err := orderPresenter.userRepo.UpdateUserAmount(creatorId, math.Round((user.Amount-amount)*100)/100)
 
 	if err != nil {
-		fmt.Println("Failed to upgrade connection:", err)
-		return
+		return err
 	}
 
-	defer conn.Close()
+	return orderPresenter.userRepo.CreateBot(creatorId, amount)
+}
 
-	for {
-		_, message, err := conn.ReadMessage() // json format
-		if err != nil {
-			fmt.Println("Failed to read message:", err)
-			conn.WriteMessage(websocket.TextMessage, []byte("Hello, something is wrong."))
-			break
-		}
-		// deserialize to struct Order
-		var order order_repository.Order
-		if err := json.Unmarshal(message, &order); err != nil {
-			fmt.Println("Failed to unmarshal message:", err)
-			conn.WriteMessage(websocket.TextMessage, []byte("The message is not in right json object structure."))
-			break
-		}
-		if err := p.orderRepo.StoreOrder(order); err != nil {
-			fmt.Println("Failed to store order:", err)
-			conn.WriteMessage(websocket.TextMessage, []byte("We have a problem with storing your order."))
-			break
+func (orderPresenter *OrderPresenter) GetAllOrders() ([]order_repository.Order, error) {
+	orders, err := orderPresenter.orderRepo.GetAllOrders()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
+}
+
+func (orderPresenter *OrderPresenter) GetAllOrdersByUserId(userId int64) ([]order_repository.Order, error) {
+	orders, err := orderPresenter.orderRepo.GetAllOrdersByUserId(userId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
+}
+
+func (orderPresenter *OrderPresenter) GetAllOrdersBySymbol(symbol string) ([]order_repository.Order, error) {
+	orders, err := orderPresenter.orderRepo.GetAllOrdersBySymbol(symbol)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
+}
+
+func (orderPresenter *OrderPresenter) GetAllOrdersByUserIdAndSymbol(userId int64, symbol string) ([]order_repository.Order, error) {
+	orders, err := orderPresenter.orderRepo.GetAllOrdersByUserIdAndSymbol(userId, symbol)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
+}
+
+func (orderPresenter *OrderPresenter) MergeUserAndBot(botId int64) error {
+	bot, botErr := orderPresenter.userRepo.GetUserById(botId)
+	if botErr != nil {
+		return botErr
+	}
+
+	if !bot.IsBot {
+		return errors.New("can't merge 2 users - one must be bot")
+	}
+
+	user, userErr := orderPresenter.userRepo.GetUserById(bot.CreatorID.Int64)
+	if userErr != nil {
+		return userErr
+	}
+
+	ordersErr := orderPresenter.orderRepo.UpdateOrdersCreatorByUserId(bot.ID, user.ID)
+	if ordersErr != nil {
+		return ordersErr
+	}
+
+	amountErr := orderPresenter.userRepo.UpdateUserAmount(user.ID, math.Round((user.Amount+bot.Amount)*100)/100)
+	if amountErr != nil {
+		return amountErr
+	}
+
+	return orderPresenter.userRepo.DeleteUserById(bot.ID)
+}
+
+func (orderPresenter *OrderPresenter) EstimateUserAmount(userId int64) (float64, error) {
+	orders, err := orderPresenter.orderRepo.GetAllOrdersByUserId(userId)
+	if err != nil {
+		return 0, err
+	}
+
+	quantityMap := make(map[string]float64)
+	for _, o := range orders {
+		if o.Type == "buy" {
+			quantityMap[o.Symbol] += o.Amount
+		} else {
+			quantityMap[o.Symbol] -= o.Amount
 		}
 	}
+
+	//TODO: fetch most recent price for each symbol in quantityMap
+	fmt.Println(quantityMap)
+	return 0, nil
 }

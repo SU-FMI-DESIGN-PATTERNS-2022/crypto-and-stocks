@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/env"
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/order"
 	repository "github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/repositories"
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/repositories/order_repository"
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/repositories/user_repository"
 	"github.com/gorilla/websocket"
-	"net/http"
 )
 
 func main() {
@@ -23,8 +24,12 @@ func main() {
 
 	defer db.Close()
 
+	serverConfig := env.LoadServerConfig()
+
 	orderRepository := order_repository.NewOrderTable(db)
 	userRepository := user_repository.NewUserTable(db)
+
+	mux := http.NewServeMux()
 
 	var upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -34,13 +39,14 @@ func main() {
 		},
 	}
 
-	p := order.NewPresenter(orderRepository, userRepository, &upgrader)
+	orderPresenter := order.NewOrderPresenter(orderRepository, userRepository, &upgrader)
+	orderHandler := order.NewOrderHandler(orderPresenter)
 
-	http.HandleFunc("/order", p.StoreOrder)
+	order.HandleRoutes(mux, orderHandler)
 
-	fmt.Println("Starting server on :8080")
-	err = http.ListenAndServe(":8080", nil)
-	if err != nil {
+	fmt.Println("Starting server on", serverConfig.Port)
+	serverErr := http.ListenAndServe(fmt.Sprintf("localhost:%d", serverConfig.Port), mux)
+	if serverErr != nil {
 		fmt.Println("Failed to start server:", err)
 	}
 }

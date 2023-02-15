@@ -1,11 +1,12 @@
 package user_repository
 
+import "database/sql"
+
 type User struct {
-	ID        int64
-	UserID    int64
-	Name      string
-	Orders    []int64
-	IsBot     bool
-	CreatorID int64
-	Amount    float64
+	ID        int64          `db:"id"`
+	UserID    sql.NullInt64  `db:"user_id"`
+	Name      sql.NullString `db:"name"`
+	IsBot     bool           `db:"is_bot"`
+	CreatorID sql.NullInt64  `db:"creator_id"`
+	Amount    float64        `db:"amount"`
 }
