@@ -4,8 +4,35 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/env"
 	"github.com/gorilla/websocket"
 )
+
+func NewStreamConfig(wsConfig env.WebSocetConfig) StreamConfig {
+	return StreamConfig{
+		URL:    wsConfig.CryptoURL,
+		Quotes: wsConfig.CryptoQuotes,
+		Key:    wsConfig.Key,
+		Secret: wsConfig.Secret,
+	}
+}
+func NewCryptoConfig(wsConfig env.WebSocetConfig) StreamConfig {
+	return StreamConfig{
+		URL:    wsConfig.CryptoURL,
+		Quotes: wsConfig.CryptoQuotes,
+		Key:    wsConfig.Key,
+		Secret: wsConfig.Secret,
+	}
+}
+
+func NewStockConfig(wsConfig env.WebSocetConfig) StreamConfig {
+	return StreamConfig{
+		URL:    wsConfig.StockURL,
+		Quotes: wsConfig.StockQuotes,
+		Key:    wsConfig.Key,
+		Secret: wsConfig.Secret,
+	}
+}
 
 type StreamConfig struct {
 	URL    string

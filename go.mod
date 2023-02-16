@@ -3,6 +3,7 @@ module github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks
 go 1.19
 
 require (
+	github.com/asaskevich/EventBus v0.0.0-20200907212545-49d423059eef
 	github.com/gorilla/websocket v1.5.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.4.0

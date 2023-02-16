@@ -47,6 +47,7 @@ func (c *Collection[Prices]) StoreEntry(price Prices) error {
 	return err
 }
 
+
 func (c *Collection[Prices]) GetAllPrices() ([]Prices, error) {
 	collection := c.instance.Database(c.database).Collection(c.collectionName)
 
