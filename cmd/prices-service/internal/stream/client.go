@@ -16,6 +16,23 @@ func NewStreamConfig(wsConfig env.WebSocetConfig) StreamConfig {
 		Secret: wsConfig.Secret,
 	}
 }
+func NewCryptoConfig(wsConfig env.WebSocetConfig) StreamConfig {
+	return StreamConfig{
+		URL:    wsConfig.CryptoURL,
+		Quotes: wsConfig.CryptoQuotes,
+		Key:    wsConfig.Key,
+		Secret: wsConfig.Secret,
+	}
+}
+
+func NewStockConfig(wsConfig env.WebSocetConfig) StreamConfig {
+	return StreamConfig{
+		URL:    wsConfig.StockURL,
+		Quotes: wsConfig.StockQuotes,
+		Key:    wsConfig.Key,
+		Secret: wsConfig.Secret,
+	}
+}
 
 type StreamConfig struct {
 	URL    string
