@@ -49,6 +49,17 @@ func (table *UserTable) GetUserByUserId(id int64) (User, error) {
 	return user, nil
 }
 
+func (table *UserTable) GetUserAmount(id int64) (float64, error) {
+	var amount float64
+	err := table.instance.Get(&amount, selectUserAmountWhereIdSQL, id)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return amount, nil
+}
+
 func (table *UserTable) CreateBot(creatorID int64, amount float64) error {
 	_, err := table.instance.Exec(createBotSQL,
 		nil,
