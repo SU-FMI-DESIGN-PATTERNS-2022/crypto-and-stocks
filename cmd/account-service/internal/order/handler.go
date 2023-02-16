@@ -60,7 +60,6 @@ func (handler *OrderHandler) success(res http.ResponseWriter, req *http.Request,
 }
 
 func (handler *OrderHandler) GetAllOrders(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-type", "application/json")
 	if req.Method != http.MethodGet {
 		handler.notFound(res, req)
 		return
@@ -75,7 +74,6 @@ func (handler *OrderHandler) GetAllOrders(res http.ResponseWriter, req *http.Req
 }
 
 func (handler *OrderHandler) GetAllOrdersByUserId(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-type", "application/json")
 	if !getOrdersByUserExpr.MatchString(req.URL.Path) {
 		handler.notFound(res, req)
 		return
@@ -90,14 +88,13 @@ func (handler *OrderHandler) GetAllOrdersByUserId(res http.ResponseWriter, req *
 
 	orders, err := handler.presenter.GetAllOrdersByUserId(id)
 	if err != nil {
-		handler.internalServerError(res, req, "Could not fetch orders!")
+		handler.internalServerError(res, req, "Could not fetch orders")
 		return
 	}
 	handler.success(res, req, orders)
 }
 
 func (handler *OrderHandler) GetAllOrdersByUserIdAndSymbol(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-type", "application/json")
 	if !getOrdersByUserIdAndSymbolExpr.MatchString(req.URL.Path) {
 		handler.notFound(res, req)
 		return
@@ -120,14 +117,13 @@ func (handler *OrderHandler) GetAllOrdersByUserIdAndSymbol(res http.ResponseWrit
 
 	orders, err := handler.presenter.GetAllOrdersByUserIdAndSymbol(id, query.Get("symbol"))
 	if err != nil {
-		handler.internalServerError(res, req, "Could not fetch orders!")
+		handler.internalServerError(res, req, "Could not fetch orders")
 		return
 	}
 	handler.success(res, req, orders)
 }
 
 func (handler *OrderHandler) GetAllOrdersBySymbol(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-type", "application/json")
 	if !getOrdersBySymbolExpr.MatchString(req.URL.Path) {
 		handler.notFound(res, req)
 		return
@@ -136,14 +132,13 @@ func (handler *OrderHandler) GetAllOrdersBySymbol(res http.ResponseWriter, req *
 
 	orders, err := handler.presenter.GetAllOrdersBySymbol(symbol)
 	if err != nil {
-		handler.internalServerError(res, req, "Could not fetch orders!")
+		handler.internalServerError(res, req, "Could not fetch orders")
 		return
 	}
 	handler.success(res, req, orders)
 }
 
 func (handler *OrderHandler) CreateUser(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-type", "application/json")
 	if !createUserExpr.MatchString(req.URL.Path) {
 		handler.notFound(res, req)
 		return
@@ -170,17 +165,17 @@ func (handler *OrderHandler) CreateUser(res http.ResponseWriter, req *http.Reque
 		handler.badRequest(res, req, reqErr.Error())
 		return
 	}
-	handler.success(res, req, Message{"User created successfully!"})
+	handler.success(res, req, Message{"User created successfully"})
 }
 
 func (handler *OrderHandler) CreateBot(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-type", "application/json")
 	if !createBotExpr.MatchString(req.URL.Path) {
 		handler.notFound(res, req)
 		return
 	}
 
 	query := req.URL.Query()
+	//TODO: get id from context, not from query
 	if query.Get("id") == "" {
 		handler.badRequest(res, req, "Missing query parameter 'id'")
 		return
@@ -207,16 +202,16 @@ func (handler *OrderHandler) CreateBot(res http.ResponseWriter, req *http.Reques
 		handler.badRequest(res, req, reqErr.Error())
 		return
 	}
-	handler.success(res, req, Message{"Bot successfully created!"})
+	handler.success(res, req, Message{"Bot successfully created"})
 }
 
 func (handler *OrderHandler) MergeUserAndBot(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-type", "application/json")
 	if !mergeUserAndBotExpr.MatchString(req.URL.Path) {
 		handler.notFound(res, req)
 		return
 	}
 
+	//TODO: check if userId from context is the same as bot's creatorId
 	query := req.URL.Query()
 	if query.Get("id") == "" {
 		handler.badRequest(res, req, "Missing query parameter 'id'")
@@ -238,12 +233,12 @@ func (handler *OrderHandler) MergeUserAndBot(res http.ResponseWriter, req *http.
 }
 
 func (handler *OrderHandler) EstimateUserAmount(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-type", "application/json")
 	if !estimateUserAmountExpr.MatchString(req.URL.Path) {
 		handler.notFound(res, req)
 		return
 	}
 
+	//TODO: get id from context, not from params
 	idParam := estimateUserAmountExpr.FindStringSubmatch(req.URL.Path)
 	id, err := strconv.ParseInt(idParam[1], 10, 64)
 	if err != nil {
@@ -269,13 +264,13 @@ func (handler *OrderHandler) StoreOrder(res http.ResponseWriter, req *http.Reque
 	defer conn.Close()
 
 	for {
-		_, message, err := conn.ReadMessage() // json format
+		_, message, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Println("Failed to read message:", err)
 			conn.WriteMessage(websocket.TextMessage, []byte("Hello, something is wrong."))
 			break
 		}
-		// deserialize to struct Order
+
 		var order order_repository.Order
 		if err := json.Unmarshal(message, &order); err != nil {
 			fmt.Println(string(message))
@@ -283,6 +278,7 @@ func (handler *OrderHandler) StoreOrder(res http.ResponseWriter, req *http.Reque
 			conn.WriteMessage(websocket.TextMessage, []byte("The message is not in right json object structure."))
 			break
 		}
+		//TODO: check if context userId us the same as order userId
 		if err := handler.presenter.StoreOrder(order); err != nil {
 			fmt.Println("Failed to store order:", err)
 			conn.WriteMessage(websocket.TextMessage, []byte("We have a problem with storing your order."))
