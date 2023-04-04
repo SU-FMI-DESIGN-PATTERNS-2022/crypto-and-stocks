@@ -18,6 +18,7 @@ var _ = Describe("RepositoryController", func() {
 		cryptoTopic     = "crypto"
 		stocksTopic     = "stocks"
 		subscribeErrMsg = "subscribe failed"
+		errMsg          = "some error"
 	)
 
 	var (
@@ -101,7 +102,7 @@ var _ = Describe("RepositoryController", func() {
 			Context("crypto", func() {
 				When("storing the converted price fails", func() {
 					BeforeEach(func() {
-						mockCryptoRepo.EXPECT().StoreEntry(convertToCryptoPrice(cryptoResp)).Return(errors.New("error"))
+						mockCryptoRepo.EXPECT().StoreEntry(convertToCryptoPrice(cryptoResp)).Return(errors.New(errMsg))
 						mockStocksRepo.EXPECT().StoreEntry(gomock.Any()).Return(nil)
 					})
 
@@ -129,7 +130,7 @@ var _ = Describe("RepositoryController", func() {
 			Context("stocks", func() {
 				When("storing the converted price fails", func() {
 					BeforeEach(func() {
-						mockStocksRepo.EXPECT().StoreEntry(convertToStockPrice(stockResp)).Return(errors.New("error"))
+						mockStocksRepo.EXPECT().StoreEntry(convertToStockPrice(stockResp)).Return(errors.New(errMsg))
 						mockCryptoRepo.EXPECT().StoreEntry(gomock.Any()).Return(nil)
 					})
 
