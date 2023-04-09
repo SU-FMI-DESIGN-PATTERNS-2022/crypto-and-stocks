@@ -8,8 +8,8 @@ import (
 	http "net/http"
 	reflect "reflect"
 
+	prices "github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/prices"
 	gomock "github.com/golang/mock/gomock"
-	websocket "github.com/gorilla/websocket"
 )
 
 // MockUpgrader is a mock of Upgrader interface.
@@ -36,10 +36,10 @@ func (m *MockUpgrader) EXPECT() *MockUpgraderMockRecorder {
 }
 
 // Upgrade mocks base method.
-func (m *MockUpgrader) Upgrade(w http.ResponseWriter, r *http.Request, responseHeader http.Header) (*websocket.Conn, error) {
+func (m *MockUpgrader) Upgrade(w http.ResponseWriter, r *http.Request, responseHeader http.Header) (prices.Connection, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Upgrade", w, r, responseHeader)
-	ret0, _ := ret[0].(*websocket.Conn)
+	ret0, _ := ret[0].(prices.Connection)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -85,4 +85,41 @@ func (m *MockEventBus) Subscribe(topic string, fn interface{}) error {
 func (mr *MockEventBusMockRecorder) Subscribe(topic, fn interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockEventBus)(nil).Subscribe), topic, fn)
+}
+
+// MockConnection is a mock of Connection interface.
+type MockConnection struct {
+	ctrl     *gomock.Controller
+	recorder *MockConnectionMockRecorder
+}
+
+// MockConnectionMockRecorder is the mock recorder for MockConnection.
+type MockConnectionMockRecorder struct {
+	mock *MockConnection
+}
+
+// NewMockConnection creates a new mock instance.
+func NewMockConnection(ctrl *gomock.Controller) *MockConnection {
+	mock := &MockConnection{ctrl: ctrl}
+	mock.recorder = &MockConnectionMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockConnection) EXPECT() *MockConnectionMockRecorder {
+	return m.recorder
+}
+
+// WriteJSON mocks base method.
+func (m *MockConnection) WriteJSON(v interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WriteJSON", v)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WriteJSON indicates an expected call of WriteJSON.
+func (mr *MockConnectionMockRecorder) WriteJSON(v interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteJSON", reflect.TypeOf((*MockConnection)(nil).WriteJSON), v)
 }
