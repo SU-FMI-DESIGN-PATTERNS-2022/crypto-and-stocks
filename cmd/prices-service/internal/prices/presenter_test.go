@@ -1,6 +1,7 @@
 package prices_test
 
 import (
+	"errors"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -10,7 +11,15 @@ import (
 )
 
 var _ = Describe("Presenter", func() {
-	const msg = "hi"
+	const (
+		cryptoTopic     = "crypto"
+		stocksTopic     = "stocks"
+		msg             = "hi"
+		upgradeErrMsg   = "upgrade failed"
+		subscribeErrMsg = "subscribe failed"
+		writeJSONErrMsg = "write JSON failed"
+	)
+
 	var (
 		ctrl         *gomock.Controller
 		mockUpgarder *mock_prices.MockUpgrader
@@ -30,11 +39,56 @@ var _ = Describe("Presenter", func() {
 	})
 
 	FContext("StockHandler", func() {
-		When("", func() {
+
+		When("upgrading the HTTP server connection to the WebSocket protocol fails", func() {
+			BeforeEach(func() {
+				gomock.InOrder(
+					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(nil, errors.New(upgradeErrMsg)),
+				)
+			})
+			It("should return an error", func() {
+				presenter.StockHandler(nil, nil)
+				Expect(response).To(Equal(""))
+			})
+		})
+
+		When("Subscribing for responding fails", func() {
 			BeforeEach(func() {
 				gomock.InOrder(
 					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(mockConn, nil),
-					mockBus.EXPECT().Subscribe("stocks", gomock.Any()).DoAndReturn(
+					mockBus.EXPECT().Subscribe(stocksTopic, gomock.Any()).Return(errors.New(subscribeErrMsg)))
+			})
+			It("should return an error", func() {
+				presenter.StockHandler(nil, nil)
+				Expect(response).To(Equal(""))
+			})
+		})
+
+		When("Writing JSON fails", func() {
+			BeforeEach(func() {
+				gomock.InOrder(
+					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(mockConn, nil),
+					mockBus.EXPECT().Subscribe(stocksTopic, gomock.Any()).DoAndReturn(
+						func(topic string, fn interface{}) error {
+							f, ok := fn.(func(resp interface{}))
+							Expect(ok).To(BeTrue())
+							f(msg)
+							return nil
+						},
+					),
+					mockConn.EXPECT().WriteJSON(gomock.Any()).Return(errors.New(writeJSONErrMsg)))
+			})
+			It("should return an error", func() {
+				presenter.StockHandler(nil, nil)
+				Expect(response).To(Equal(""))
+			})
+		})
+
+		When("upgrading the HTTP server connection to the WebSocket protocol succeed and subscribing for responding", func() {
+			BeforeEach(func() {
+				gomock.InOrder(
+					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(mockConn, nil),
+					mockBus.EXPECT().Subscribe(stocksTopic, gomock.Any()).DoAndReturn(
 						func(topic string, fn interface{}) error {
 							f, ok := fn.(func(resp interface{}))
 							Expect(ok).To(BeTrue())
@@ -50,10 +104,84 @@ var _ = Describe("Presenter", func() {
 					),
 				)
 			})
-			It("", func() {
+			It("should not return an error", func() {
 				presenter.StockHandler(nil, nil)
 				Expect(response).To(Equal(msg))
 			})
 		})
 	})
+
+	FContext("CryptoHandler", func() {
+
+		When("upgrading the HTTP server connection to the WebSocket protocol fails", func() {
+			BeforeEach(func() {
+				gomock.InOrder(
+					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(nil, errors.New(upgradeErrMsg)),
+				)
+			})
+			It("should return an error", func() {
+				presenter.CryptoHandler(nil, nil)
+				Expect(response).To(Equal(""))
+			})
+		})
+
+		When("Subscribing for responding fails", func() {
+			BeforeEach(func() {
+				gomock.InOrder(
+					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(mockConn, nil),
+					mockBus.EXPECT().Subscribe(cryptoTopic, gomock.Any()).Return(errors.New(subscribeErrMsg)))
+			})
+			It("should return an error", func() {
+				presenter.CryptoHandler(nil, nil)
+				Expect(response).To(Equal(""))
+			})
+		})
+
+		When("Writing JSON fails", func() {
+			BeforeEach(func() {
+				gomock.InOrder(
+					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(mockConn, nil),
+					mockBus.EXPECT().Subscribe(cryptoTopic, gomock.Any()).DoAndReturn(
+						func(topic string, fn interface{}) error {
+							f, ok := fn.(func(resp interface{}))
+							Expect(ok).To(BeTrue())
+							f(msg)
+							return nil
+						},
+					),
+					mockConn.EXPECT().WriteJSON(gomock.Any()).Return(errors.New(writeJSONErrMsg)))
+			})
+			It("should return an error", func() {
+				presenter.CryptoHandler(nil, nil)
+				Expect(response).To(Equal(""))
+			})
+		})
+
+		When("upgrading the HTTP server connection to the WebSocket protocol succeed and subscribing for responding", func() {
+			BeforeEach(func() {
+				gomock.InOrder(
+					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(mockConn, nil),
+					mockBus.EXPECT().Subscribe(cryptoTopic, gomock.Any()).DoAndReturn(
+						func(topic string, fn interface{}) error {
+							f, ok := fn.(func(resp interface{}))
+							Expect(ok).To(BeTrue())
+							f(msg)
+							return nil
+						},
+					),
+					mockConn.EXPECT().WriteJSON(gomock.Any()).DoAndReturn(
+						func(json string) error {
+							response = json
+							return nil
+						},
+					),
+				)
+			})
+			It("should not return an error", func() {
+				presenter.CryptoHandler(nil, nil)
+				Expect(response).To(Equal(msg))
+			})
+		})
+	})
+
 })

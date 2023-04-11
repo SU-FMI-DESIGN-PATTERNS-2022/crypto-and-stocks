@@ -52,7 +52,15 @@ func (p *Presenter) CryptoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Presenter) subscribeForResponding(conn Connection, topic string) {
-	p.bus.Subscribe(topic, func(resp interface{}) {
-		conn.WriteJSON(resp)
+	err := p.bus.Subscribe(topic, func(resp interface{}) {
+		err := conn.WriteJSON(resp)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 	})
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }
