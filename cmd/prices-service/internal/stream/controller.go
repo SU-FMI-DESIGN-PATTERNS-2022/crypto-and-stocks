@@ -34,14 +34,12 @@ func (c *Controller) StartStreamsToWrite() <-chan error {
 	errCh := make(chan error, 2)
 	go func() {
 		if err := c.cryptoStream.Start(c.publishInCrypto); err != nil {
-			// panic(err)
 			errCh <- err
 		}
 	}()
 
 	go func() {
 		if err := c.stockStream.Start(c.publishInStocks); err != nil {
-			// panic(err)
 			errCh <- err
 		}
 	}()
