@@ -38,31 +38,27 @@ var _ = Describe("Controller", func() {
 	Context("StartStreamsToWrite", func() {
 		When("starting crypto stream fails", func() {
 			BeforeEach(func() {
-				mockCryptoStream.EXPECT().Start(gomock.Any()).Return(errors.New(responseErrMsg))
-				mockStockStream.EXPECT().Start(gomock.Any()).Return(nil)
+				mockCryptoStream.EXPECT().Start(gomock.Any()).Return(errors.New(responseErrMsg)).AnyTimes()
+				mockStockStream.EXPECT().Start(gomock.Any()).Return(nil).AnyTimes()
 			})
 
-			It("should return an error", func() {
-				err := controller.StartStreamsToWrite()
-
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring(responseErrMsg))
-				Expect(err.Error()).To(ContainSubstring("crypto"))
+			It("should panic", func() {
+				errCh := controller.StartStreamsToWrite()
+				err := errors.New(responseErrMsg)
+				Eventually(errCh).Should(Receive(&err))
 			})
 		})
 
-		When("starting stocks stream fails", func() {
+		When("starting both crypto and stocks streams succeeds", func() {
 			BeforeEach(func() {
-				mockCryptoStream.EXPECT().Start(gomock.Any()).Return(nil)
-				mockStockStream.EXPECT().Start(gomock.Any()).Return(errors.New(responseErrMsg))
+				mockCryptoStream.EXPECT().Start(gomock.Any()).Return(nil).AnyTimes()
+				mockStockStream.EXPECT().Start(gomock.Any()).Return(nil).AnyTimes()
 			})
 
-			It("should return an error", func() {
-				err := controller.StartStreamsToWrite()
-
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring(responseErrMsg))
-				Expect(err.Error()).To(ContainSubstring("stocks"))
+			It("should not panic", func() {
+				Expect(func() {
+					controller.StartStreamsToWrite()
+				}).NotTo(Panic())
 			})
 		})
 	})

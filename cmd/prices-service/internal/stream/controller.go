@@ -2,7 +2,6 @@ package stream
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 )
 
@@ -31,24 +30,22 @@ func NewController(cryptoStream PriceStream, stockStream PriceStream, bus EventB
 	}
 }
 
-func (c *Controller) StartStreamsToWrite() error {
-	errChan := make(chan error)
-
+func (c *Controller) StartStreamsToWrite() <-chan error {
+	errCh := make(chan error, 2)
 	go func() {
 		if err := c.cryptoStream.Start(c.publishInCrypto); err != nil {
-			errChan <- fmt.Errorf("start crypto stream fails: %w", err)
-			return
+			// panic(err)
+			errCh <- err
 		}
 	}()
 
 	go func() {
 		if err := c.stockStream.Start(c.publishInStocks); err != nil {
-			errChan <- fmt.Errorf("start stocks stream fails: %w", err)
-			return
+			// panic(err)
+			errCh <- err
 		}
 	}()
-
-	return <-errChan
+	return errCh
 }
 
 func (c *Controller) StopStreams() {

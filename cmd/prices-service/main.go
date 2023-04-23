@@ -52,23 +52,28 @@ func main() {
 	}
 
 	streamController := stream.NewController(cryptoStream, stockStream, bus)
-	streamController.StartStreamsToWrite()
+	errCh := streamController.StartStreamsToWrite()
 
-	upgrader := &websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
-
-	pricesPresenter := prices.NewPresenter(upgrader, bus)
-
-	http.HandleFunc("/crypto", pricesPresenter.CryptoHandler)
-	http.HandleFunc("/stocks", pricesPresenter.StockHandler)
-
-	go log.Fatal(http.ListenAndServe(*addr, nil))
-
-	time.Sleep(time.Minute)
-	streamController.StopStreams()
-	if err = client.Disconnect(context.TODO()); err != nil {
+	select {
+	case err := <-errCh:
 		panic(err)
+	default:
+		upgrader := &websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		}
+
+		pricesPresenter := prices.NewPresenter(upgrader, bus)
+
+		http.HandleFunc("/crypto", pricesPresenter.CryptoHandler)
+		http.HandleFunc("/stocks", pricesPresenter.StockHandler)
+
+		go log.Fatal(http.ListenAndServe(*addr, nil))
+
+		time.Sleep(time.Minute)
+		streamController.StopStreams()
+		if err = client.Disconnect(context.TODO()); err != nil {
+			panic(err)
+		}
 	}
 }
