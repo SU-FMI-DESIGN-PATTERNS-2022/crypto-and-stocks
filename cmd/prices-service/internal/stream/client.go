@@ -85,11 +85,11 @@ func NewPriceStream(clientSocetConfig StreamConfig) (*Stream, error) {
 	}, nil
 }
 
-func (s *Stream) Start(msgHandler func([]byte)) error {
+func (s *Stream) Start(msgHandler func([]byte) error) error {
 	errChan := make(chan error, 1)
 
 	go s.listenForResponse(errChan)
-	go s.handleResponse(msgHandler)
+	go s.handleResponse(msgHandler, errChan)
 
 	return <-errChan
 }
@@ -116,7 +116,7 @@ func (s *Stream) listenForResponse(errChan chan error) {
 	}
 }
 
-func (s *Stream) handleResponse(msgHandler func([]byte)) {
+func (s *Stream) handleResponse(msgHandler func([]byte) error, errChan chan error) {
 	defer func() {
 		close(s.priceStream)
 	}()
@@ -126,7 +126,11 @@ func (s *Stream) handleResponse(msgHandler func([]byte)) {
 		case <-s.closeChan:
 			return
 		case response := <-s.priceStream:
-			msgHandler(response)
+			err := msgHandler(response)
+			if err != nil {
+				errChan <- fmt.Errorf("handling message fails: %w", err)
+				return
+			}
 		}
 	}
 }

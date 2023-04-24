@@ -74,7 +74,7 @@ func (m *MockPriceStream) EXPECT() *MockPriceStreamMockRecorder {
 }
 
 // Start mocks base method.
-func (m *MockPriceStream) Start(msgHandler func([]byte)) error {
+func (m *MockPriceStream) Start(msgHandler func([]byte) error) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Start", msgHandler)
 	ret0, _ := ret[0].(error)

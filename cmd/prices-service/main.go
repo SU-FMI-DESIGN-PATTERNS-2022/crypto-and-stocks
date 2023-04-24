@@ -6,7 +6,6 @@ import (
 	"flag"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/database"
 	mongoEnv "github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/env"
@@ -56,7 +55,12 @@ func main() {
 
 	select {
 	case err := <-errCh:
-		panic(err)
+		log.Fatal(err)
+		streamController.StopStreams()
+		if err = client.Disconnect(context.TODO()); err != nil {
+			panic(err)
+		}
+		return
 	default:
 		upgrader := &websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -69,11 +73,5 @@ func main() {
 		http.HandleFunc("/stocks", pricesPresenter.StockHandler)
 
 		go log.Fatal(http.ListenAndServe(*addr, nil))
-
-		time.Sleep(time.Minute)
-		streamController.StopStreams()
-		if err = client.Disconnect(context.TODO()); err != nil {
-			panic(err)
-		}
 	}
 }

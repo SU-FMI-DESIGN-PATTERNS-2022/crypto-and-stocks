@@ -2,7 +2,6 @@ package stream
 
 import (
 	"encoding/json"
-	"log"
 )
 
 //go:generate mockgen -source=controller.go -destination=mocks/controller.go
@@ -12,7 +11,7 @@ type EventBus interface {
 }
 
 type PriceStream interface {
-	Start(msgHandler func([]byte)) error
+	Start(msgHandler func([]byte) error) error
 	Stop()
 }
 
@@ -51,26 +50,32 @@ func (c *Controller) StopStreams() {
 	c.stockStream.Stop()
 }
 
-func (c *Controller) publishInCrypto(b []byte) {
+func (c *Controller) publishInCrypto(b []byte) error {
 	var resp []CryptoResponse
 
 	if err := json.Unmarshal(b, &resp); err != nil {
-		log.Println(err)
+		// log.Println(err)
+		return err
 	}
 
 	for _, price := range resp {
 		c.bus.Publish("crypto", price)
 	}
+
+	return nil
 }
 
-func (c *Controller) publishInStocks(b []byte) {
+func (c *Controller) publishInStocks(b []byte) error {
 	var resp []StockResponse
 
 	if err := json.Unmarshal(b, &resp); err != nil {
-		log.Println(err)
+		// log.Println(err)
+		return err
 	}
 
 	for _, price := range resp {
 		c.bus.Publish("stocks", price)
 	}
+
+	return nil
 }
