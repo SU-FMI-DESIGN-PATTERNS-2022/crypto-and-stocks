@@ -13,7 +13,6 @@ import (
 
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/stream"
 	mock_stream "github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/stream/mocks"
-	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/database"
 )
 
 var _ = Describe("Controller", func() {
@@ -88,9 +87,14 @@ var _ = Describe("Controller", func() {
 				failJSON   []byte
 			)
 
+			BeforeEach(func() {
+				cryptoJSON = convertToCryptoJSON(getCryptoResponse())
+				stocksJSON = convertToStockJSON(getStockResponse())
+				failJSON = getFailJSON()
+			})
+
 			When("publishing crypto price fails", func() {
 				BeforeEach(func() {
-					failJSON = nil
 					mockCryptoStream.EXPECT().Start(gomock.Any()).DoAndReturn(func(msgHandler func([]byte) error) error {
 						return msgHandler(failJSON)
 					})
@@ -106,13 +110,11 @@ var _ = Describe("Controller", func() {
 
 			When("publishing crypto price succeeds", func() {
 				BeforeEach(func() {
-					cryptoJSON = getCryptoPriceAsJSON()
-
 					mockCryptoStream.EXPECT().Start(gomock.Any()).DoAndReturn(func(msgHandler func([]byte) error) error {
 						return msgHandler(cryptoJSON)
 					})
 					mockStockStream.EXPECT().Start(gomock.Any()).Return(nil)
-					mockEventBus.EXPECT().Publish(cryptoTopic, gomock.Any())
+					mockEventBus.EXPECT().Publish(cryptoTopic, getCryptoResponse())
 				})
 
 				It("should not receive error", func() {
@@ -123,7 +125,6 @@ var _ = Describe("Controller", func() {
 
 			When("publishing stocks price fails", func() {
 				BeforeEach(func() {
-					failJSON = nil
 					mockCryptoStream.EXPECT().Start(gomock.Any()).Return(nil)
 					mockStockStream.EXPECT().Start(gomock.Any()).DoAndReturn(func(msgHandler func([]byte) error) error {
 						return msgHandler(failJSON)
@@ -139,13 +140,11 @@ var _ = Describe("Controller", func() {
 
 			When("publishing stocks price succeeds", func() {
 				BeforeEach(func() {
-					stocksJSON = getStocksPriceAsJSON()
-
 					mockCryptoStream.EXPECT().Start(gomock.Any()).Return(nil)
 					mockStockStream.EXPECT().Start(gomock.Any()).DoAndReturn(func(msgHandler func([]byte) error) error {
 						return msgHandler(stocksJSON)
 					})
-					mockEventBus.EXPECT().Publish(stocksTopic, gomock.Any())
+					mockEventBus.EXPECT().Publish(stocksTopic, getStockResponse())
 				})
 
 				It("should not receive error", func() {
@@ -156,8 +155,6 @@ var _ = Describe("Controller", func() {
 
 			When("publishing both crypto and stocks prices fails", func() {
 				BeforeEach(func() {
-					failJSON = nil
-
 					mockCryptoStream.EXPECT().Start(gomock.Any()).DoAndReturn(func(msgHandler func([]byte) error) error {
 						return msgHandler(failJSON)
 					})
@@ -176,17 +173,14 @@ var _ = Describe("Controller", func() {
 
 			When("publishing both crypto and stocks prices succeeds", func() {
 				BeforeEach(func() {
-					cryptoJSON = getCryptoPriceAsJSON()
-					stocksJSON = getStocksPriceAsJSON()
-
 					mockCryptoStream.EXPECT().Start(gomock.Any()).DoAndReturn(func(msgHandler func([]byte) error) error {
 						return msgHandler(cryptoJSON)
 					})
 					mockStockStream.EXPECT().Start(gomock.Any()).DoAndReturn(func(msgHandler func([]byte) error) error {
 						return msgHandler(stocksJSON)
 					})
-					mockEventBus.EXPECT().Publish(cryptoTopic, gomock.Any())
-					mockEventBus.EXPECT().Publish(stocksTopic, gomock.Any())
+					mockEventBus.EXPECT().Publish(cryptoTopic, getCryptoResponse())
+					mockEventBus.EXPECT().Publish(stocksTopic, getStockResponse())
 				})
 
 				It("should not receive error", func() {
@@ -197,51 +191,80 @@ var _ = Describe("Controller", func() {
 		})
 	})
 
-	// TODO:
-	// Context("StopStreams", func() {
-	// 	When("stopping crypto stream", func() {
-	// 		BeforeEach(func() {
-	// 			mockCryptoStream.EXPECT().Stop()
-	// 			mockStockStream.EXPECT().Stop()
-	// 		})
+	Context("StopStreams", func() {
+		BeforeEach(func() {
+			mockCryptoStream.EXPECT().Stop().MinTimes(1)
+			mockStockStream.EXPECT().Stop().MinTimes(1)
+		})
 
-	// 		It("should not panic", func() {
-	// 			Expect(controller.StopStreams).ToNot(Panic())
-	// 		})
-	// 	})
-	// })
+		When("stopping streams after start", func() {
+			BeforeEach(func() {
+				mockCryptoStream.EXPECT().Start(gomock.Any()).Return(nil)
+				mockStockStream.EXPECT().Start(gomock.Any()).Return(nil)
+			})
+
+			It("should not publish", func() {
+				errChan := controller.StartStreamsToWrite()
+				time.Sleep(time.Millisecond)
+				controller.StopStreams()
+
+				mockEventBus.EXPECT().Publish(cryptoTopic, gomock.Any()).MaxTimes(0)
+				mockEventBus.EXPECT().Publish(stocksTopic, gomock.Any()).MaxTimes(0)
+				Consistently(errChan).ShouldNot(Receive())
+			})
+		})
+
+		When("stopping streams before start", func() {
+			BeforeEach(func() {
+				mockCryptoStream.EXPECT().Start(gomock.Any()).Return(nil).MaxTimes(0)
+				mockStockStream.EXPECT().Start(gomock.Any()).Return(nil).MaxTimes(0)
+			})
+
+			It("should not panic", func() {
+				Expect(controller.StopStreams).ToNot(Panic())
+			})
+		})
+
+		When("stopping streams after already being closed", func() {
+			BeforeEach(func() {
+				mockCryptoStream.EXPECT().Start(gomock.Any()).Return(nil)
+				mockStockStream.EXPECT().Start(gomock.Any()).Return(nil)
+			})
+
+			It("should not panic", func() {
+				controller.StartStreamsToWrite()
+				time.Sleep(time.Millisecond)
+
+				controller.StopStreams()
+				Expect(controller.StopStreams).ToNot(Panic())
+			})
+		})
+	})
 })
 
-// TODO: reduce the bellow functions
 func getCryptoResponse() stream.CryptoResponse {
+	date, err := time.Parse("2006-01-02", "2023-02-16")
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
 	return stream.CryptoResponse{
 		Response: stream.Response{
 			Symbol: "symbol",
-			Date:   time.Now(),
+			Date:   date,
 		},
 		Exchange: "excahnge",
 	}
 }
 
-func convertToCryptoPrice(cryptoResp stream.CryptoResponse) database.CryptoPrices {
-	return database.CryptoPrices{
-		Prices: database.Prices{
-			Symbol:   cryptoResp.Symbol,
-			BidPrice: cryptoResp.BidPrice,
-			BidSize:  cryptoResp.BidSize,
-			AskPrice: cryptoResp.AskPrice,
-			AskSize:  cryptoResp.AskSize,
-			Date:     cryptoResp.Date,
-		},
-		Exchange: cryptoResp.Exchange,
-	}
-}
-
 func getStockResponse() stream.StockResponse {
+	date, err := time.Parse("2006-01-02", "2023-02-16")
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
 	return stream.StockResponse{
 		Response: stream.Response{
 			Symbol: "symbol",
-			Date:   time.Now(),
+			Date:   date,
 		},
 		AskExchange: "ask exchange",
 		BidExchange: "bid exchange",
@@ -250,27 +273,9 @@ func getStockResponse() stream.StockResponse {
 	}
 }
 
-func convertToStockPrice(stockResp stream.StockResponse) database.StockPrices {
-	return database.StockPrices{
-		Prices: database.Prices{
-			Symbol:   stockResp.Symbol,
-			BidPrice: stockResp.BidPrice,
-			BidSize:  stockResp.BidSize,
-			AskPrice: stockResp.AskPrice,
-			AskSize:  stockResp.AskSize,
-			Date:     stockResp.Date,
-		},
-		AskExchange: stockResp.AskExchange,
-		BidExchange: stockResp.BidExchange,
-		TradeSize:   stockResp.TradeSize,
-		Conditions:  stockResp.Conditions,
-		Tape:        stockResp.Tape,
-	}
-}
-
-func getCryptoPriceAsJSON() []byte {
-	price := []database.CryptoPrices{convertToCryptoPrice(getCryptoResponse())}
-	res, err := json.Marshal(price)
+func convertToCryptoJSON(cryptoResp stream.CryptoResponse) []byte {
+	responses := []stream.CryptoResponse{cryptoResp}
+	res, err := json.Marshal(responses)
 
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -279,9 +284,9 @@ func getCryptoPriceAsJSON() []byte {
 	return res
 }
 
-func getStocksPriceAsJSON() []byte {
-	price := []database.StockPrices{convertToStockPrice(getStockResponse())}
-	res, err := json.Marshal(price)
+func convertToStockJSON(stockResp stream.StockResponse) []byte {
+	responses := []stream.StockResponse{stockResp}
+	res, err := json.Marshal(responses)
 
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -290,4 +295,9 @@ func getStocksPriceAsJSON() []byte {
 	return res
 }
 
-// TODO: create getFailJSON() function
+func getFailJSON() []byte {
+	const failObject = `{
+		"type": "fail"
+	}`
+	return []byte(failObject)
+}

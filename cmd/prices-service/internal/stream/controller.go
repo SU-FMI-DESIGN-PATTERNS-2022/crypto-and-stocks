@@ -54,7 +54,6 @@ func (c *Controller) publishInCrypto(b []byte) error {
 	var resp []CryptoResponse
 
 	if err := json.Unmarshal(b, &resp); err != nil {
-		// log.Println(err)
 		return err
 	}
 
@@ -69,7 +68,6 @@ func (c *Controller) publishInStocks(b []byte) error {
 	var resp []StockResponse
 
 	if err := json.Unmarshal(b, &resp); err != nil {
-		// log.Println(err)
 		return err
 	}
 
