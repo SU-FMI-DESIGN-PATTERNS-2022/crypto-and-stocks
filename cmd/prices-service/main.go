@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
 
-	"flag"
-	"log"
 	"net/http"
 	"time"
 
@@ -19,26 +18,31 @@ import (
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/stream"
 )
 
-var addr = flag.String("addr", "localhost:8080", "http service address")
-
 func main() {
-	mongoConfig := mongoEnv.LoadMongoConfig()
-
-	client, err := database.Connect(mongoConfig, database.Remote)
+	mongoConfig, err := mongoEnv.LoadMongoDBConfig()
 	if err != nil {
 		panic(err)
 	}
 
-	cryptoRepo := database.NewCollection[database.CryptoPrices](client, mongoConfig.Database, "CryptoPrices")
-	stocksRepo := database.NewCollection[database.StockPrices](client, mongoConfig.Database, "StockPrices")
+	mongoClient, err := database.Connect(mongoConfig, database.Remote)
+	if err != nil {
+		panic(err)
+	}
+
+	cryptoRepo := database.NewCollection[database.CryptoPrices](mongoClient, mongoConfig.Database, "CryptoPrices")
+	stocksRepo := database.NewCollection[database.StockPrices](mongoClient, mongoConfig.Database, "StockPrices")
 
 	repoController := prices.NewRepositoryController(cryptoRepo, stocksRepo)
 
 	bus := EventBus.New()
 	repoController.ListenForStoring(bus)
 
-	wsConfig := env.LoadWebSocetConfig()
-	cryptoStreamConfig := stream.NewStreamConfig(wsConfig)
+	wsConfig, err := env.LoadWebSocetConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	cryptoStreamConfig := stream.NewCryptoConfig(wsConfig)
 	stockStreamConfig := stream.NewStockConfig(wsConfig)
 
 	cryptoStream, err := stream.NewPriceStream(cryptoStreamConfig)
@@ -64,11 +68,21 @@ func main() {
 	http.HandleFunc("/crypto", pricesPresenter.CryptoHandler)
 	http.HandleFunc("/stocks", pricesPresenter.StockHandler)
 
-	go log.Fatal(http.ListenAndServe(*addr, nil))
+	serverConfig, err := env.LoadServerConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	go func() {
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", serverConfig.Port), nil); err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
 
 	time.Sleep(time.Minute)
+
 	streamController.StopStreams()
-	if err = client.Disconnect(context.TODO()); err != nil {
+	if err := mongoClient.Disconnect(context.Background()); err != nil {
 		panic(err)
 	}
 }
