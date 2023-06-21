@@ -3,17 +3,24 @@ package order
 import (
 	"net/http"
 
-	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/middleware"
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
-func HandleRoutes(mux *http.ServeMux, handler OrderHandler) {
-	mux.HandleFunc("/orders/all", middleware.SetContentTypeJSON(handler.GetAllOrders))
-	mux.HandleFunc("/orders/user/", middleware.SetContentTypeJSON(handler.GetAllOrdersByUserId))
-	mux.HandleFunc("/orders/user/symbol", middleware.SetContentTypeJSON(handler.GetAllOrdersByUserIdAndSymbol))
-	mux.HandleFunc("/orders/symbol/", middleware.SetContentTypeJSON(handler.GetAllOrdersBySymbol))
-	mux.HandleFunc("/orders/store", middleware.Authenticate(handler.StoreOrder))
-	// mux.HandleFunc("/create/user", middleware.SetContentTypeJSON(handler.CreateUser))
-	// mux.HandleFunc("/create/bot", middleware.Authenticate(middleware.SetContentTypeJSON(handler.CreateBot)))
-	// mux.HandleFunc("/merge", middleware.Authenticate(middleware.SetContentTypeJSON(handler.MergeUserAndBot)))
-	// mux.HandleFunc("/user/amount/", middleware.Authenticate(middleware.SetContentTypeJSON(handler.EstimateUserAmount)))
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+func HandleRoutes(router *gin.RouterGroup, orderPresenter OrderPresenter) {
+	orderHandler := NewOrderHandler(orderPresenter, &upgrader)
+
+	router.GET("/all", orderHandler.GetAllOrders)
+	router.GET("/store", orderHandler.StoreOrder)
+	router.GET("/user/:id", orderHandler.GetAllOrdersByUserId)
+	router.GET("/symbol/:symbol", orderHandler.GetAllOrdersBySymbol)
+	router.GET("/:id/:symbol", orderHandler.GetAllOrdersByUserIdAndSymbol)
 }

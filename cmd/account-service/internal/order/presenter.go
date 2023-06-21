@@ -3,10 +3,7 @@ package order
 import (
 	"errors"
 
-	"net/http"
-
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/repositories/order_repository"
-	"github.com/gorilla/websocket"
 )
 
 type OrderRepository interface {
@@ -22,21 +19,15 @@ type UserRepository interface {
 	UpdateUserAmount(id int64, amount float64) error
 }
 
-type Upgrader interface {
-	Upgrade(w http.ResponseWriter, r *http.Request, responseHeader http.Header) (*websocket.Conn, error)
-}
-
 type OrderPresenter struct {
 	orderRepo OrderRepository
 	userRepo  UserRepository
-	upgrader  Upgrader
 }
 
-func NewOrderPresenter(orderRepo OrderRepository, userRepo UserRepository, upgrader Upgrader) OrderPresenter {
+func NewOrderPresenter(orderRepo OrderRepository, userRepo UserRepository) OrderPresenter {
 	return OrderPresenter{
 		orderRepo: orderRepo,
 		userRepo:  userRepo,
-		upgrader:  upgrader,
 	}
 }
 
