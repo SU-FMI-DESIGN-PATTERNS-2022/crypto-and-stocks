@@ -17,7 +17,7 @@ type DBConfig struct {
 }
 
 type ServerConfig struct {
-	Port int
+	Port string
 }
 
 func goDotEnvVariable(key string) string {
@@ -49,10 +49,8 @@ func LoadDBConfig() DBConfig {
 }
 
 func LoadServerConfig() ServerConfig {
-	port, err := strconv.Atoi(goDotEnvVariable("SERVER_PORT"))
-	if err != nil {
-		panic(err)
-	}
+	port := goDotEnvVariable("SERVER_PORT")
+
 	return ServerConfig{
 		Port: port,
 	}

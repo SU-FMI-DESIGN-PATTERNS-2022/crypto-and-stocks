@@ -23,10 +23,10 @@ var (
 	getOrdersBySymbolExpr          = regexp.MustCompile(`^\/orders\/symbol\/(?P<Param>\w+)$`)
 	getOrdersByUserExpr            = regexp.MustCompile(`^\/orders\/user\/(?P<Param>\w+)$`)
 	getOrdersByUserIdAndSymbolExpr = regexp.MustCompile(`^\/orders\/user\/symbol$`)
-	createUserExpr                 = regexp.MustCompile(`^\/create\/user$`)
-	createBotExpr                  = regexp.MustCompile(`^\/create\/bot$`)
-	mergeUserAndBotExpr            = regexp.MustCompile(`^\/merge$`)
-	estimateUserAmountExpr         = regexp.MustCompile(`^\/user\/amount\/(?P<Param>\w+)$`)
+	// createUserExpr                 = regexp.MustCompile(`^\/create\/user$`)
+	// createBotExpr                  = regexp.MustCompile(`^\/create\/bot$`)
+	// mergeUserAndBotExpr            = regexp.MustCompile(`^\/merge$`)
+	// estimateUserAmountExpr         = regexp.MustCompile(`^\/user\/amount\/(?P<Param>\w+)$`)
 )
 
 func NewOrderHandler(orderPresenter OrderPresenter) OrderHandler {
@@ -138,120 +138,120 @@ func (handler *OrderHandler) GetAllOrdersBySymbol(res http.ResponseWriter, req *
 	handler.success(res, req, orders)
 }
 
-func (handler *OrderHandler) CreateUser(res http.ResponseWriter, req *http.Request) {
-	if !createUserExpr.MatchString(req.URL.Path) {
-		handler.notFound(res, req)
-		return
-	}
+// func (handler *OrderHandler) CreateUser(res http.ResponseWriter, req *http.Request) {
+// 	if !createUserExpr.MatchString(req.URL.Path) {
+// 		handler.notFound(res, req)
+// 		return
+// 	}
 
-	query := req.URL.Query()
-	if query.Get("id") == "" {
-		handler.badRequest(res, req, "Missing query parameter 'id'")
-		return
-	}
-	if query.Get("name") == "" {
-		handler.badRequest(res, req, "Missing query parameter 'name'")
-		return
-	}
+// 	query := req.URL.Query()
+// 	if query.Get("id") == "" {
+// 		handler.badRequest(res, req, "Missing query parameter 'id'")
+// 		return
+// 	}
+// 	if query.Get("name") == "" {
+// 		handler.badRequest(res, req, "Missing query parameter 'name'")
+// 		return
+// 	}
 
-	id, err := strconv.ParseInt(query.Get("id"), 10, 64)
-	if err != nil {
-		handler.badRequest(res, req, "Query parameter id should be number")
-		return
-	}
+// 	id, err := strconv.ParseInt(query.Get("id"), 10, 64)
+// 	if err != nil {
+// 		handler.badRequest(res, req, "Query parameter id should be number")
+// 		return
+// 	}
 
-	reqErr := handler.presenter.CreateUser(id, query.Get("name"))
-	if reqErr != nil {
-		handler.badRequest(res, req, reqErr.Error())
-		return
-	}
-	handler.success(res, req, Message{"User created successfully"})
-}
+// 	reqErr := handler.presenter.CreateUser(id, query.Get("name"))
+// 	if reqErr != nil {
+// 		handler.badRequest(res, req, reqErr.Error())
+// 		return
+// 	}
+// 	handler.success(res, req, Message{"User created successfully"})
+// }
 
-func (handler *OrderHandler) CreateBot(res http.ResponseWriter, req *http.Request) {
-	if !createBotExpr.MatchString(req.URL.Path) {
-		handler.notFound(res, req)
-		return
-	}
+// func (handler *OrderHandler) CreateBot(res http.ResponseWriter, req *http.Request) {
+// 	if !createBotExpr.MatchString(req.URL.Path) {
+// 		handler.notFound(res, req)
+// 		return
+// 	}
 
-	query := req.URL.Query()
-	//TODO: get id from context, not from query
-	if query.Get("id") == "" {
-		handler.badRequest(res, req, "Missing query parameter 'id'")
-		return
-	}
-	if query.Get("amount") == "" {
-		handler.badRequest(res, req, "Missing query parameter 'amount'")
-		return
-	}
+// 	query := req.URL.Query()
+// 	//TODO: get id from context, not from query
+// 	if query.Get("id") == "" {
+// 		handler.badRequest(res, req, "Missing query parameter 'id'")
+// 		return
+// 	}
+// 	if query.Get("amount") == "" {
+// 		handler.badRequest(res, req, "Missing query parameter 'amount'")
+// 		return
+// 	}
 
-	id, err := strconv.ParseInt(query.Get("id"), 10, 64)
-	if err != nil {
-		handler.badRequest(res, req, "Query parameter id should be number")
-		return
-	}
+// 	id, err := strconv.ParseInt(query.Get("id"), 10, 64)
+// 	if err != nil {
+// 		handler.badRequest(res, req, "Query parameter id should be number")
+// 		return
+// 	}
 
-	amount, err := strconv.ParseFloat(query.Get("amount"), 64)
-	if err != nil {
-		handler.badRequest(res, req, "Query parameter amount should be number")
-		return
-	}
+// 	amount, err := strconv.ParseFloat(query.Get("amount"), 64)
+// 	if err != nil {
+// 		handler.badRequest(res, req, "Query parameter amount should be number")
+// 		return
+// 	}
 
-	reqErr := handler.presenter.CreateBot(id, amount)
-	if reqErr != nil {
-		handler.badRequest(res, req, reqErr.Error())
-		return
-	}
-	handler.success(res, req, Message{"Bot successfully created"})
-}
+// 	reqErr := handler.presenter.CreateBot(id, amount)
+// 	if reqErr != nil {
+// 		handler.badRequest(res, req, reqErr.Error())
+// 		return
+// 	}
+// 	handler.success(res, req, Message{"Bot successfully created"})
+// }
 
-func (handler *OrderHandler) MergeUserAndBot(res http.ResponseWriter, req *http.Request) {
-	if !mergeUserAndBotExpr.MatchString(req.URL.Path) {
-		handler.notFound(res, req)
-		return
-	}
+// func (handler *OrderHandler) MergeUserAndBot(res http.ResponseWriter, req *http.Request) {
+// 	if !mergeUserAndBotExpr.MatchString(req.URL.Path) {
+// 		handler.notFound(res, req)
+// 		return
+// 	}
 
-	//TODO: check if userId from context is the same as bot's creatorId
-	query := req.URL.Query()
-	if query.Get("id") == "" {
-		handler.badRequest(res, req, "Missing query parameter 'id'")
-		return
-	}
+// 	//TODO: check if userId from context is the same as bot's creatorId
+// 	query := req.URL.Query()
+// 	if query.Get("id") == "" {
+// 		handler.badRequest(res, req, "Missing query parameter 'id'")
+// 		return
+// 	}
 
-	id, err := strconv.ParseInt(query.Get("id"), 10, 64)
-	if err != nil {
-		handler.badRequest(res, req, "Query parameter id should be number")
-		return
-	}
+// 	id, err := strconv.ParseInt(query.Get("id"), 10, 64)
+// 	if err != nil {
+// 		handler.badRequest(res, req, "Query parameter id should be number")
+// 		return
+// 	}
 
-	reqErr := handler.presenter.MergeUserAndBot(id)
-	if reqErr != nil {
-		handler.badRequest(res, req, reqErr.Error())
-		return
-	}
-	handler.success(res, req, Message{"Successfully merged user and bot"})
-}
+// 	reqErr := handler.presenter.MergeUserAndBot(id)
+// 	if reqErr != nil {
+// 		handler.badRequest(res, req, reqErr.Error())
+// 		return
+// 	}
+// 	handler.success(res, req, Message{"Successfully merged user and bot"})
+// }
 
-func (handler *OrderHandler) EstimateUserAmount(res http.ResponseWriter, req *http.Request) {
-	if !estimateUserAmountExpr.MatchString(req.URL.Path) {
-		handler.notFound(res, req)
-		return
-	}
+// func (handler *OrderHandler) EstimateUserAmount(res http.ResponseWriter, req *http.Request) {
+// 	if !estimateUserAmountExpr.MatchString(req.URL.Path) {
+// 		handler.notFound(res, req)
+// 		return
+// 	}
 
-	//TODO: get id from context, not from params
-	idParam := estimateUserAmountExpr.FindStringSubmatch(req.URL.Path)
-	id, err := strconv.ParseInt(idParam[1], 10, 64)
-	if err != nil {
-		handler.badRequest(res, req, "Parameter id should be number")
-		return
-	}
-	amount, err := handler.presenter.EstimateUserAmount(id)
-	if err != nil {
-		handler.internalServerError(res, req, "internal server error")
-		return
-	}
-	handler.success(res, req, map[string]float64{"amount": amount})
-}
+// 	//TODO: get id from context, not from params
+// 	idParam := estimateUserAmountExpr.FindStringSubmatch(req.URL.Path)
+// 	id, err := strconv.ParseInt(idParam[1], 10, 64)
+// 	if err != nil {
+// 		handler.badRequest(res, req, "Parameter id should be number")
+// 		return
+// 	}
+// 	amount, err := handler.presenter.EstimateUserAmount(id)
+// 	if err != nil {
+// 		handler.internalServerError(res, req, "internal server error")
+// 		return
+// 	}
+// 	handler.success(res, req, map[string]float64{"amount": amount})
+// }
 
 func (handler *OrderHandler) StoreOrder(res http.ResponseWriter, req *http.Request) {
 	conn, err := handler.presenter.upgrader.Upgrade(res, req, nil)
