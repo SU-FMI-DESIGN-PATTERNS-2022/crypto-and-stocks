@@ -3,12 +3,11 @@ package main
 import (
 	"context"
 
-	"flag"
 	"log"
-	"net/http"
 
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/database"
 	mongoEnv "github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/env"
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 
 	"github.com/asaskevich/EventBus"
@@ -18,27 +17,31 @@ import (
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/stream"
 )
 
-var addr = flag.String("addr", "localhost:8080", "http service address")
+var upgrader = &websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
 
 func main() {
 	mongoConfig := mongoEnv.LoadMongoConfig()
+	wsConfig := env.LoadWebSocetConfig()
+	serverConfig := env.LoadServerConfig()
+	cryptoStreamConfig := stream.NewStreamConfig(wsConfig)
+	stockStreamConfig := stream.NewStockConfig(wsConfig)
 
 	client, err := database.Connect(mongoConfig, database.Remote)
 	if err != nil {
 		panic(err)
 	}
 
+	defer func() {
+		if err = client.Disconnect(context.TODO()); err != nil {
+			panic(err)
+		}
+	}()
+
 	cryptoRepo := database.NewCollection[database.CryptoPrices](client, mongoConfig.Database, "CryptoPrices")
 	stocksRepo := database.NewCollection[database.StockPrices](client, mongoConfig.Database, "StockPrices")
-
-	repoController := prices.NewRepositoryController(cryptoRepo, stocksRepo)
-
-	bus := EventBus.New()
-	repoController.ListenForStoring(bus)
-
-	wsConfig := env.LoadWebSocetConfig()
-	cryptoStreamConfig := stream.NewStreamConfig(wsConfig)
-	stockStreamConfig := stream.NewStockConfig(wsConfig)
 
 	cryptoStream, err := stream.NewPriceStream(cryptoStreamConfig)
 	if err != nil {
@@ -50,28 +53,24 @@ func main() {
 		panic(err)
 	}
 
+	repoController := prices.NewRepositoryController(cryptoRepo, stocksRepo)
+	bus := EventBus.New()
 	streamController := stream.NewController(cryptoStream, stockStream, bus)
+
+	repoController.ListenForStoring(bus)
 	errCh := streamController.StartStreamsToWrite()
+
+	pricesPresenter := prices.NewPresenter(upgrader, bus)
+
+	router := gin.Default()
+	prices.HandleRoutes(&router.RouterGroup, *pricesPresenter)
 
 	select {
 	case err := <-errCh:
 		log.Fatal(err)
 		streamController.StopStreams()
-		if err = client.Disconnect(context.TODO()); err != nil {
-			panic(err)
-		}
 		return
 	default:
-		upgrader := &websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-		}
-
-		pricesPresenter := prices.NewPresenter(upgrader, bus)
-
-		http.HandleFunc("/crypto", pricesPresenter.CryptoHandler)
-		http.HandleFunc("/stocks", pricesPresenter.StockHandler)
-
-		go log.Fatal(http.ListenAndServe(*addr, nil))
+		router.Run("localhost:" + serverConfig.Port)
 	}
 }

@@ -55,8 +55,8 @@ func main() {
 	ordersGroup := router.Group("orders")
 	usersGroup := router.Group("users")
 
-	order.HandleRoutes(ordersGroup, orderPresenter)
-	user.HandleRoutes(usersGroup, userPresenter)
+	order.HandleRoutes(ordersGroup, *orderPresenter)
+	user.HandleRoutes(usersGroup, *userPresenter)
 
 	router.Run("localhost:" + serverConfig.Port)
 }

@@ -19,8 +19,8 @@ type OrderHandler struct {
 	upgrader  Upgrader
 }
 
-func NewOrderHandler(orderPresenter OrderPresenter, upgrader Upgrader) OrderHandler {
-	return OrderHandler{
+func NewOrderHandler(orderPresenter OrderPresenter, upgrader Upgrader) *OrderHandler {
+	return &OrderHandler{
 		presenter: orderPresenter,
 		upgrader:  upgrader,
 	}

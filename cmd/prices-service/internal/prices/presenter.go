@@ -17,19 +17,19 @@ type EventBus interface {
 	Subscribe(topic string, fn interface{}) error
 }
 
-type presenter struct {
+type PricesPresenter struct {
 	upgrader Upgrader
 	bus      EventBus
 }
 
-func NewPresenter(upgrader Upgrader, bus EventBus) *presenter {
-	return &presenter{
+func NewPresenter(upgrader Upgrader, bus EventBus) *PricesPresenter {
+	return &PricesPresenter{
 		upgrader: upgrader,
 		bus:      bus,
 	}
 }
 
-func (p *presenter) StockHandler(w http.ResponseWriter, r *http.Request) {
+func (p *PricesPresenter) StockHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := p.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -39,7 +39,7 @@ func (p *presenter) StockHandler(w http.ResponseWriter, r *http.Request) {
 	p.subscribeForResponding(conn, "stocks")
 }
 
-func (p *presenter) CryptoHandler(w http.ResponseWriter, r *http.Request) {
+func (p *PricesPresenter) CryptoHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := p.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -49,7 +49,7 @@ func (p *presenter) CryptoHandler(w http.ResponseWriter, r *http.Request) {
 	p.subscribeForResponding(conn, "crypto")
 }
 
-func (p *presenter) subscribeForResponding(conn *websocket.Conn, topic string) {
+func (p *PricesPresenter) subscribeForResponding(conn *websocket.Conn, topic string) {
 	p.bus.Subscribe(topic, func(resp interface{}) {
 		conn.WriteJSON(resp)
 	})

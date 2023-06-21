@@ -43,8 +43,8 @@ type UserPresenter struct {
 	stockRepo  StockPricesRepository
 }
 
-func NewUserPresenter(orderRepo OrderRepository, userRepo UserRepository, cryptoRepo CryptoPricesRepository, stockRepo StockPricesRepository) UserPresenter {
-	return UserPresenter{
+func NewUserPresenter(orderRepo OrderRepository, userRepo UserRepository, cryptoRepo CryptoPricesRepository, stockRepo StockPricesRepository) *UserPresenter {
+	return &UserPresenter{
 		orderRepo:  orderRepo,
 		userRepo:   userRepo,
 		cryptoRepo: cryptoRepo,

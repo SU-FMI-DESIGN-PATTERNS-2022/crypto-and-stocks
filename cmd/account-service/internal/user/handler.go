@@ -11,8 +11,8 @@ type UserHandler struct {
 	presenter UserPresenter
 }
 
-func NewUserHandler(userPresenter UserPresenter) UserHandler {
-	return UserHandler{
+func NewUserHandler(userPresenter UserPresenter) *UserHandler {
+	return &UserHandler{
 		presenter: userPresenter,
 	}
 }

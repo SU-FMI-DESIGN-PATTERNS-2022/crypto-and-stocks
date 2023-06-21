@@ -24,8 +24,8 @@ type OrderPresenter struct {
 	userRepo  UserRepository
 }
 
-func NewOrderPresenter(orderRepo OrderRepository, userRepo UserRepository) OrderPresenter {
-	return OrderPresenter{
+func NewOrderPresenter(orderRepo OrderRepository, userRepo UserRepository) *OrderPresenter {
+	return &OrderPresenter{
 		orderRepo: orderRepo,
 		userRepo:  userRepo,
 	}

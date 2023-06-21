@@ -16,6 +16,10 @@ type WebSocetConfig struct {
 	Secret       string
 }
 
+type ServerConfig struct {
+	Port string
+}
+
 func goDotEnvVariable(key string) string {
 	err := godotenv.Load("env/.env")
 
@@ -36,5 +40,13 @@ func LoadWebSocetConfig() WebSocetConfig {
 		StockQuotes:  []string{"AAPL", "AMZN"},
 		Key:          key,
 		Secret:       secret,
+	}
+}
+
+func LoadServerConfig() ServerConfig {
+	port := goDotEnvVariable("SERVER_PORT")
+
+	return ServerConfig{
+		Port: port,
 	}
 }
