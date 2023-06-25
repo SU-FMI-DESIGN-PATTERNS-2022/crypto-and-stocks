@@ -2,6 +2,7 @@ package prices_test
 
 import (
 	"errors"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -38,8 +39,7 @@ var _ = Describe("Presenter", func() {
 		response = ""
 	})
 
-	FContext("StockHandler", func() {
-
+	Context("StockHandler", func() {
 		When("upgrading the HTTP server connection to the WebSocket protocol fails", func() {
 			BeforeEach(func() {
 				gomock.InOrder(
@@ -111,8 +111,7 @@ var _ = Describe("Presenter", func() {
 		})
 	})
 
-	FContext("CryptoHandler", func() {
-
+	Context("CryptoHandler", func() {
 		When("upgrading the HTTP server connection to the WebSocket protocol fails", func() {
 			BeforeEach(func() {
 				gomock.InOrder(
@@ -151,6 +150,7 @@ var _ = Describe("Presenter", func() {
 					),
 					mockConn.EXPECT().WriteJSON(gomock.Any()).Return(errors.New(writeJSONErrMsg)))
 			})
+
 			It("should return an error", func() {
 				presenter.CryptoHandler(nil, nil)
 				Expect(response).To(Equal(""))
@@ -183,5 +183,4 @@ var _ = Describe("Presenter", func() {
 			})
 		})
 	})
-
 })
