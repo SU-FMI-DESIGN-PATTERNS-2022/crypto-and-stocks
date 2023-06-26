@@ -40,14 +40,27 @@ var _ = Describe("Controller", func() {
 	})
 
 	Context("StartStreamsToWrite", func() {
+		var errCh chan error
+
+		BeforeEach(func() {
+			errCh = make(chan error, 1)
+		})
+
+		JustBeforeEach(func() {
+			go func() {
+				if err := controller.StartStreamsToWrite(); err != nil {
+					errCh <- err
+				}
+			}()
+		})
+
 		When("starting crypto stream fails", func() {
 			BeforeEach(func() {
 				mockCryptoStream.EXPECT().Start(gomock.Any()).Return(errors.New(responseErrMsg))
 				mockStockStream.EXPECT().Start(gomock.Any()).Return(nil)
 			})
 
-			It("should receive error", func() {
-				errCh := controller.StartStreamsToWrite()
+			It("should return error", func() {
 				err := errors.New(responseErrMsg)
 				Eventually(errCh).Should(Receive(&err))
 			})
@@ -60,7 +73,6 @@ var _ = Describe("Controller", func() {
 			})
 
 			It("should receive error", func() {
-				errCh := controller.StartStreamsToWrite()
 				err := errors.New(responseErrMsg)
 				Eventually(errCh).Should(Receive(&err))
 			})
@@ -72,10 +84,8 @@ var _ = Describe("Controller", func() {
 				mockStockStream.EXPECT().Start(gomock.Any()).Return(errors.New(responseErrMsg))
 			})
 
-			It("should receive two errors", func() {
-				errCh := controller.StartStreamsToWrite()
+			It("should receive error", func() {
 				err := errors.New(responseErrMsg)
-				Eventually(errCh).Should(Receive(&err))
 				Eventually(errCh).Should(Receive(&err))
 			})
 		})
@@ -102,7 +112,6 @@ var _ = Describe("Controller", func() {
 				})
 
 				It("should receive error", func() {
-					errCh := controller.StartStreamsToWrite()
 					err := errors.New(handleErrMsg)
 					Eventually(errCh).Should(Receive(&err))
 				})
@@ -118,7 +127,6 @@ var _ = Describe("Controller", func() {
 				})
 
 				It("should not receive error", func() {
-					errCh := controller.StartStreamsToWrite()
 					Consistently(errCh).ShouldNot(Receive())
 				})
 			})
@@ -132,7 +140,6 @@ var _ = Describe("Controller", func() {
 				})
 
 				It("should receive error", func() {
-					errCh := controller.StartStreamsToWrite()
 					err := errors.New(handleErrMsg)
 					Eventually(errCh).Should(Receive(&err))
 				})
@@ -148,7 +155,6 @@ var _ = Describe("Controller", func() {
 				})
 
 				It("should not receive error", func() {
-					errCh := controller.StartStreamsToWrite()
 					Consistently(errCh).ShouldNot(Receive())
 				})
 			})
@@ -163,10 +169,8 @@ var _ = Describe("Controller", func() {
 					})
 				})
 
-				It("should receive two errors", func() {
-					errCh := controller.StartStreamsToWrite()
+				It("should receive error", func() {
 					err := errors.New(handleErrMsg)
-					Eventually(errCh).Should(Receive(&err))
 					Eventually(errCh).Should(Receive(&err))
 				})
 			})
@@ -184,7 +188,6 @@ var _ = Describe("Controller", func() {
 				})
 
 				It("should not receive error", func() {
-					errCh := controller.StartStreamsToWrite()
 					Consistently(errCh).ShouldNot(Receive())
 				})
 			})
@@ -204,13 +207,18 @@ var _ = Describe("Controller", func() {
 			})
 
 			It("should not publish", func() {
-				errChan := controller.StartStreamsToWrite()
+				errCh := make(chan error)
+				go func() {
+					if err := controller.StartStreamsToWrite(); err != nil {
+						errCh <- err
+					}
+				}()
 				time.Sleep(time.Millisecond)
 				controller.StopStreams()
 
 				mockEventBus.EXPECT().Publish(cryptoTopic, gomock.Any()).MaxTimes(0)
 				mockEventBus.EXPECT().Publish(stocksTopic, gomock.Any()).MaxTimes(0)
-				Consistently(errChan).ShouldNot(Receive())
+				Consistently(errCh).ShouldNot(Receive())
 			})
 		})
 
@@ -232,7 +240,7 @@ var _ = Describe("Controller", func() {
 			})
 
 			It("should not panic", func() {
-				controller.StartStreamsToWrite()
+				go controller.StartStreamsToWrite()
 				time.Sleep(time.Millisecond)
 
 				controller.StopStreams()

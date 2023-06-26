@@ -18,7 +18,7 @@ import (
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/stream"
 )
 
-var addr = flag.String("addr", "localhost:8080", "http service address")
+var addr = flag.String("addr", "localhost:8000", "http service address")
 
 func main() {
 	mongoConfig := mongoEnv.LoadMongoConfig()
@@ -27,6 +27,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	defer func() {
+		if err = client.Disconnect(context.TODO()); err != nil {
+			panic(err)
+		}
+	}()
 
 	cryptoRepo := database.NewCollection[database.CryptoPrices](client, mongoConfig.Database, "CryptoPrices")
 	stocksRepo := database.NewCollection[database.StockPrices](client, mongoConfig.Database, "StockPrices")
@@ -51,27 +57,23 @@ func main() {
 	}
 
 	streamController := stream.NewController(cryptoStream, stockStream, bus)
-	errCh := streamController.StartStreamsToWrite()
 
-	select {
-	case err := <-errCh:
-		log.Fatal(err)
-		streamController.StopStreams()
-		if err = client.Disconnect(context.TODO()); err != nil {
-			panic(err)
+	go func() {
+		if err := streamController.StartStreamsToWrite(); err != nil {
+			log.Fatal(err)
 		}
-		return
-	default:
-		upgrader := &websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-		}
+	}()
+	defer streamController.StopStreams()
 
-		pricesPresenter := prices.NewPresenter(upgrader, bus)
-
-		http.HandleFunc("/crypto", pricesPresenter.CryptoHandler)
-		http.HandleFunc("/stocks", pricesPresenter.StockHandler)
-
-		go log.Fatal(http.ListenAndServe(*addr, nil))
+	upgrader := &websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
 	}
+
+	pricesPresenter := prices.NewPresenter(upgrader, bus)
+
+	http.HandleFunc("/crypto", pricesPresenter.CryptoHandler)
+	http.HandleFunc("/stocks", pricesPresenter.StockHandler)
+
+	log.Fatal(http.ListenAndServe(*addr, nil))
 }

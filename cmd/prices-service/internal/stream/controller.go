@@ -29,8 +29,9 @@ func NewController(cryptoStream PriceStream, stockStream PriceStream, bus EventB
 	}
 }
 
-func (c *Controller) StartStreamsToWrite() <-chan error {
-	errCh := make(chan error, 2)
+func (c *Controller) StartStreamsToWrite() error {
+	errCh := make(chan error, 1)
+
 	go func() {
 		if err := c.cryptoStream.Start(c.publishInCrypto); err != nil {
 			errCh <- err
@@ -42,7 +43,8 @@ func (c *Controller) StartStreamsToWrite() <-chan error {
 			errCh <- err
 		}
 	}()
-	return errCh
+
+	return <-errCh
 }
 
 func (c *Controller) StopStreams() {
