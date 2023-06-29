@@ -12,6 +12,8 @@ require (
 	go.mongodb.org/mongo-driver v1.11.3
 )
 
+require github.com/kelseyhightower/envconfig v1.4.0 // indirect
+
 require (
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
