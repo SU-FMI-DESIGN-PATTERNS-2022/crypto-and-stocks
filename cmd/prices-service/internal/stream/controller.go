@@ -2,69 +2,80 @@ package stream
 
 import (
 	"encoding/json"
-	"log"
 )
 
 //go:generate mockgen -source=controller.go -destination=mocks/controller.go
 
-type Bus interface {
+type EventBus interface {
 	Publish(topic string, args ...interface{})
 }
 
-type controller struct {
-	cryptoStream *Stream
-	stockStream  *Stream
-	bus          Bus
+type PriceStream interface {
+	Start(msgHandler func([]byte) error) error
+	Stop()
 }
 
-func NewController(cryptoStream *Stream, stockStream *Stream, bus Bus) *controller {
-	return &controller{
+type Controller struct {
+	cryptoStream PriceStream
+	stockStream  PriceStream
+	bus          EventBus
+}
+
+func NewController(cryptoStream PriceStream, stockStream PriceStream, bus EventBus) *Controller {
+	return &Controller{
 		cryptoStream: cryptoStream,
 		stockStream:  stockStream,
 		bus:          bus,
 	}
 }
 
-func (c *controller) StartStreamsToWrite() {
+func (c *Controller) StartStreamsToWrite() error {
+	errCh := make(chan error, 1)
+
 	go func() {
 		if err := c.cryptoStream.Start(c.publishInCrypto); err != nil {
-			panic(err)
+			errCh <- err
 		}
 	}()
 
 	go func() {
 		if err := c.stockStream.Start(c.publishInStocks); err != nil {
-			panic(err)
+			errCh <- err
 		}
 	}()
 
+	return <-errCh
 }
 
-func (c *controller) StopStreams() {
+func (c *Controller) StopStreams() {
 	c.cryptoStream.Stop()
 	c.stockStream.Stop()
 }
 
-func (c *controller) publishInCrypto(b []byte) {
+func (c *Controller) publishInCrypto(b []byte) error {
 	var resp []CryptoResponse
 
 	if err := json.Unmarshal(b, &resp); err != nil {
-		log.Println(err)
+		return err
 	}
 
 	for _, price := range resp {
 		c.bus.Publish("crypto", price)
 	}
+
+	return nil
 }
 
-func (c *controller) publishInStocks(b []byte) {
+func (c *Controller) publishInStocks(b []byte) error {
 	var resp []StockResponse
 
 	if err := json.Unmarshal(b, &resp); err != nil {
-		log.Println(err)
+		return err
 	}
 
 	for _, price := range resp {
 		c.bus.Publish("stocks", price)
 	}
+
+	return nil
 }

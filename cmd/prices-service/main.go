@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"net/http"
-	"time"
 
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/database"
 	mongoEnv "github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/env"
@@ -37,6 +37,12 @@ func main() {
 		panic(err)
 	}
 
+	defer func() {
+		if err = mongoClient.Disconnect(context.TODO()); err != nil {
+			panic(err)
+		}
+	}()
+
 	cryptoRepo := database.NewCollection[database.CryptoPrices](mongoClient, mongoConfig.Database, "CryptoPrices")
 	stocksRepo := database.NewCollection[database.StockPrices](mongoClient, mongoConfig.Database, "StockPrices")
 
@@ -64,7 +70,13 @@ func main() {
 	}
 
 	streamController := stream.NewController(cryptoStream, stockStream, bus)
-	streamController.StartStreamsToWrite()
+
+	go func() {
+		if err := streamController.StartStreamsToWrite(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+	defer streamController.StopStreams()
 
 	wsUpgrader := &websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -77,20 +89,6 @@ func main() {
 	http.HandleFunc("/stocks", pricesPresenter.StockHandler)
 
 	serverConfig, err := env.LoadServerConfig()
-	if err != nil {
-		panic(err)
-	}
 
-	go func() {
-		if err := http.ListenAndServe(fmt.Sprintf(":%d", serverConfig.Port), nil); err != http.ErrServerClosed {
-			panic(err)
-		}
-	}()
-
-	time.Sleep(time.Minute)
-
-	streamController.StopStreams()
-	if err := mongoClient.Disconnect(context.Background()); err != nil {
-		panic(err)
-	}
+	log.Fatal(http.ListenAndServe(fmt.Sprintf("%d", serverConfig.Port), nil))
 }
