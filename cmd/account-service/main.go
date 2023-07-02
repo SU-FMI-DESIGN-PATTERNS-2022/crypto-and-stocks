@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/env"
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/order"
@@ -13,7 +14,16 @@ import (
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/database"
 	mongoEnv "github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/env"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
+
+type upgrader struct {
+	wsUpgrader *websocket.Upgrader
+}
+
+func (u *upgrader) Upgrade(w http.ResponseWriter, r *http.Request, responseHeader http.Header) (order.Connection, error) {
+	return u.wsUpgrader.Upgrade(w, r, responseHeader)
+}
 
 func main() {
 	dbConfig, err := env.LoadPostgreDBConfig()
@@ -55,7 +65,15 @@ func main() {
 	cryptoRepository := database.NewCollection[database.CryptoPrices](client, mongoConfig.Database, "CryptoPrices")
 	stockRepository := database.NewCollection[database.StockPrices](client, mongoConfig.Database, "StockPrices")
 
-	orderPresenter := order.NewOrderPresenter(orderRepository, userRepository)
+	wsUpgrader := &websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+
+	orderPresenter := order.NewOrderPresenter(orderRepository, userRepository, &upgrader{wsUpgrader})
 	userPresenter := user.NewUserPresenter(orderRepository, userRepository, cryptoRepository, stockRepository)
 
 	router := gin.Default()

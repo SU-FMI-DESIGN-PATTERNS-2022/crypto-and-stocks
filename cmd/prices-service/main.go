@@ -21,11 +21,11 @@ import (
 )
 
 type upgrader struct {
-	wsUpgarder *websocket.Upgrader
+	wsUpgrader *websocket.Upgrader
 }
 
 func (u *upgrader) Upgrade(w http.ResponseWriter, r *http.Request, responseHeader http.Header) (prices.Connection, error) {
-	return u.wsUpgarder.Upgrade(w, r, responseHeader)
+	return u.wsUpgrader.Upgrade(w, r, responseHeader)
 }
 
 func main() {

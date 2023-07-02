@@ -29,17 +29,17 @@ func NewController(cryptoStream PriceStream, stockStream PriceStream, bus EventB
 	}
 }
 
-func (c *Controller) StartStreamsToWrite() error {
+func (controller *Controller) StartStreamsToWrite() error {
 	errCh := make(chan error, 1)
 
 	go func() {
-		if err := c.cryptoStream.Start(c.publishInCrypto); err != nil {
+		if err := controller.cryptoStream.Start(controller.publishInCrypto); err != nil {
 			errCh <- err
 		}
 	}()
 
 	go func() {
-		if err := c.stockStream.Start(c.publishInStocks); err != nil {
+		if err := controller.stockStream.Start(controller.publishInStocks); err != nil {
 			errCh <- err
 		}
 	}()
@@ -47,12 +47,12 @@ func (c *Controller) StartStreamsToWrite() error {
 	return <-errCh
 }
 
-func (c *Controller) StopStreams() {
-	c.cryptoStream.Stop()
-	c.stockStream.Stop()
+func (controller *Controller) StopStreams() {
+	controller.cryptoStream.Stop()
+	controller.stockStream.Stop()
 }
 
-func (c *Controller) publishInCrypto(b []byte) error {
+func (controller *Controller) publishInCrypto(b []byte) error {
 	var resp []CryptoResponse
 
 	if err := json.Unmarshal(b, &resp); err != nil {
@@ -60,13 +60,13 @@ func (c *Controller) publishInCrypto(b []byte) error {
 	}
 
 	for _, price := range resp {
-		c.bus.Publish("crypto", price)
+		controller.bus.Publish("crypto", price)
 	}
 
 	return nil
 }
 
-func (c *Controller) publishInStocks(b []byte) error {
+func (controller *Controller) publishInStocks(b []byte) error {
 	var resp []StockResponse
 
 	if err := json.Unmarshal(b, &resp); err != nil {
@@ -74,7 +74,7 @@ func (c *Controller) publishInStocks(b []byte) error {
 	}
 
 	for _, price := range resp {
-		c.bus.Publish("stocks", price)
+		controller.bus.Publish("stocks", price)
 	}
 
 	return nil

@@ -33,28 +33,28 @@ func NewPresenter(upgrader Upgrader, bus EventBus) *Presenter {
 	}
 }
 
-func (p *Presenter) StockHandler(context *gin.Context) {
-	conn, err := p.upgrader.Upgrade(context.Writer, context.Request, nil)
+func (presenter *Presenter) StockHandler(context *gin.Context) {
+	conn, err := presenter.upgrader.Upgrade(context.Writer, context.Request, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	p.subscribeForResponding(conn, "stocks")
+	presenter.subscribeForResponding(conn, "stocks")
 }
 
-func (p *Presenter) CryptoHandler(context *gin.Context) {
-	conn, err := p.upgrader.Upgrade(context.Writer, context.Request, nil)
+func (presenter *Presenter) CryptoHandler(context *gin.Context) {
+	conn, err := presenter.upgrader.Upgrade(context.Writer, context.Request, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	p.subscribeForResponding(conn, "crypto")
+	presenter.subscribeForResponding(conn, "crypto")
 }
 
-func (p *Presenter) subscribeForResponding(conn Connection, topic string) {
-	err := p.bus.Subscribe(topic, func(resp interface{}) {
+func (presenter *Presenter) subscribeForResponding(conn Connection, topic string) {
+	err := presenter.bus.Subscribe(topic, func(resp interface{}) {
 		err := conn.WriteJSON(resp)
 		if err != nil {
 			log.Println(err)
