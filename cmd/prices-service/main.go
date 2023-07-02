@@ -18,6 +18,14 @@ import (
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/stream"
 )
 
+type upgrader struct {
+	wsUpgarder *websocket.Upgrader
+}
+
+func (u *upgrader) Upgrade(w http.ResponseWriter, r *http.Request, responseHeader http.Header) (prices.Connection, error) {
+	return u.wsUpgarder.Upgrade(w, r, responseHeader)
+}
+
 func main() {
 	mongoConfig, err := mongoEnv.LoadMongoDBConfig()
 	if err != nil {
@@ -58,12 +66,12 @@ func main() {
 	streamController := stream.NewController(cryptoStream, stockStream, bus)
 	streamController.StartStreamsToWrite()
 
-	upgrader := &websocket.Upgrader{
+	wsUpgrader := &websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 	}
 
-	pricesPresenter := prices.NewPresenter(upgrader, bus)
+	pricesPresenter := prices.NewPresenter(&upgrader{wsUpgrader}, bus)
 
 	http.HandleFunc("/crypto", pricesPresenter.CryptoHandler)
 	http.HandleFunc("/stocks", pricesPresenter.StockHandler)
