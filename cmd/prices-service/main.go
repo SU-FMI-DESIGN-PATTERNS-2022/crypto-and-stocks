@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
 
-	"flag"
-	"log"
 	"net/http"
 
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/database"
@@ -18,12 +17,21 @@ import (
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/prices-service/internal/stream"
 )
 
-var addr = flag.String("addr", "localhost:8000", "http service address")
+type upgrader struct {
+	wsUpgarder *websocket.Upgrader
+}
+
+func (u *upgrader) Upgrade(w http.ResponseWriter, r *http.Request, responseHeader http.Header) (prices.Connection, error) {
+	return u.wsUpgarder.Upgrade(w, r, responseHeader)
+}
 
 func main() {
-	mongoConfig := mongoEnv.LoadMongoConfig()
+	mongoConfig, err := mongoEnv.LoadMongoDBConfig()
+	if err != nil {
+		panic(err)
+	}
 
-	client, err := database.Connect(mongoConfig, database.Remote)
+	mongoClient, err := database.Connect(mongoConfig, database.Remote)
 	if err != nil {
 		panic(err)
 	}
@@ -42,8 +50,12 @@ func main() {
 	bus := EventBus.New()
 	repoController.ListenForStoring(bus)
 
-	wsConfig := env.LoadWebSocetConfig()
-	cryptoStreamConfig := stream.NewStreamConfig(wsConfig)
+	wsConfig, err := env.LoadWebSocetConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	cryptoStreamConfig := stream.NewCryptoConfig(wsConfig)
 	stockStreamConfig := stream.NewStockConfig(wsConfig)
 
 	cryptoStream, err := stream.NewPriceStream(cryptoStreamConfig)
@@ -65,12 +77,12 @@ func main() {
 	}()
 	defer streamController.StopStreams()
 
-	upgrader := &websocket.Upgrader{
+	wsUpgrader := &websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 	}
 
-	pricesPresenter := prices.NewPresenter(upgrader, bus)
+	pricesPresenter := prices.NewPresenter(&upgrader{wsUpgrader}, bus)
 
 	http.HandleFunc("/crypto", pricesPresenter.CryptoHandler)
 	http.HandleFunc("/stocks", pricesPresenter.StockHandler)

@@ -13,6 +13,8 @@ require (
 	go.mongodb.org/mongo-driver v1.11.3
 )
 
+require github.com/kelseyhightower/envconfig v1.4.0 // indirect
+
 require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect

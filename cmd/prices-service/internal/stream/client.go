@@ -8,14 +8,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func NewStreamConfig(wsConfig env.WebSocetConfig) StreamConfig {
-	return StreamConfig{
-		URL:    wsConfig.CryptoURL,
-		Quotes: wsConfig.CryptoQuotes,
-		Key:    wsConfig.Key,
-		Secret: wsConfig.Secret,
-	}
-}
 func NewCryptoConfig(wsConfig env.WebSocetConfig) StreamConfig {
 	return StreamConfig{
 		URL:    wsConfig.CryptoURL,
