@@ -82,7 +82,7 @@ func main() {
 	pricesPresenter := prices.NewPresenter(&upgrader{wsUpgrader}, bus)
 
 	router := gin.Default()
-	prices.HandleRoutes(&router.RouterGroup, *pricesPresenter)
+	prices.HandleRoutes(&router.RouterGroup, pricesPresenter)
 
 	serverConfig, err := env.LoadServerConfig()
 

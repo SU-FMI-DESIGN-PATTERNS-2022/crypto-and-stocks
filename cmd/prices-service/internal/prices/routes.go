@@ -2,9 +2,7 @@ package prices
 
 import "github.com/gin-gonic/gin"
 
-func HandleRoutes(router *gin.RouterGroup, pricesPresenter Presenter) {
-	pricesHandler := NewPricesHandler(pricesPresenter)
-
-	router.GET("/crypto", pricesHandler.GetCryptoPrices)
-	router.GET("/stocks", pricesHandler.GetStocksPrices)
+func HandleRoutes(router *gin.RouterGroup, pricesPresenter *Presenter) {
+	router.GET("/crypto", pricesPresenter.CryptoHandler)
+	router.GET("/stocks", pricesPresenter.StockHandler)
 }

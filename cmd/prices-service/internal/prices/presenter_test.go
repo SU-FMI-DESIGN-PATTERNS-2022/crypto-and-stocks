@@ -2,7 +2,9 @@ package prices_test
 
 import (
 	"errors"
+	"net/http/httptest"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -26,6 +28,8 @@ var _ = Describe("Presenter", func() {
 		mockUpgarder *mock_prices.MockUpgrader
 		mockBus      *mock_prices.MockEventBus
 		mockConn     *mock_prices.MockConnection
+		mockWriter   *httptest.ResponseRecorder
+		mockContext  *gin.Context
 		presenter    *prices.Presenter
 		response     string
 	)
@@ -35,6 +39,8 @@ var _ = Describe("Presenter", func() {
 		mockUpgarder = mock_prices.NewMockUpgrader(ctrl)
 		mockBus = mock_prices.NewMockEventBus(ctrl)
 		mockConn = mock_prices.NewMockConnection(ctrl)
+		mockWriter = httptest.NewRecorder()
+		mockContext, _ = gin.CreateTestContext(mockWriter)
 		presenter = prices.NewPresenter(mockUpgarder, mockBus)
 		response = ""
 	})
@@ -43,11 +49,11 @@ var _ = Describe("Presenter", func() {
 		When("upgrading the HTTP server connection to the WebSocket protocol fails", func() {
 			BeforeEach(func() {
 				gomock.InOrder(
-					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(nil, errors.New(upgradeErrMsg)),
+					mockUpgarder.EXPECT().Upgrade(mockContext.Writer, mockContext.Request, nil).Return(nil, errors.New(upgradeErrMsg)),
 				)
 			})
 			It("should return an error", func() {
-				presenter.StockHandler(nil, nil)
+				presenter.StockHandler(mockContext)
 				Expect(response).To(Equal(""))
 			})
 		})
@@ -55,11 +61,11 @@ var _ = Describe("Presenter", func() {
 		When("Subscribing for responding fails", func() {
 			BeforeEach(func() {
 				gomock.InOrder(
-					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(mockConn, nil),
+					mockUpgarder.EXPECT().Upgrade(mockContext.Writer, mockContext.Request, nil).Return(mockConn, nil),
 					mockBus.EXPECT().Subscribe(stocksTopic, gomock.Any()).Return(errors.New(subscribeErrMsg)))
 			})
 			It("should return an error", func() {
-				presenter.StockHandler(nil, nil)
+				presenter.StockHandler(mockContext)
 				Expect(response).To(Equal(""))
 			})
 		})
@@ -67,7 +73,7 @@ var _ = Describe("Presenter", func() {
 		When("Writing JSON fails", func() {
 			BeforeEach(func() {
 				gomock.InOrder(
-					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(mockConn, nil),
+					mockUpgarder.EXPECT().Upgrade(mockContext.Writer, mockContext.Request, nil).Return(mockConn, nil),
 					mockBus.EXPECT().Subscribe(stocksTopic, gomock.Any()).DoAndReturn(
 						func(topic string, fn interface{}) error {
 							f, ok := fn.(func(resp interface{}))
@@ -79,7 +85,7 @@ var _ = Describe("Presenter", func() {
 					mockConn.EXPECT().WriteJSON(gomock.Any()).Return(errors.New(writeJSONErrMsg)))
 			})
 			It("should return an error", func() {
-				presenter.StockHandler(nil, nil)
+				presenter.StockHandler(mockContext)
 				Expect(response).To(Equal(""))
 			})
 		})
@@ -87,7 +93,7 @@ var _ = Describe("Presenter", func() {
 		When("upgrading the HTTP server connection to the WebSocket protocol succeed and subscribing for responding", func() {
 			BeforeEach(func() {
 				gomock.InOrder(
-					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(mockConn, nil),
+					mockUpgarder.EXPECT().Upgrade(mockContext.Writer, mockContext.Request, nil).Return(mockConn, nil),
 					mockBus.EXPECT().Subscribe(stocksTopic, gomock.Any()).DoAndReturn(
 						func(topic string, fn interface{}) error {
 							f, ok := fn.(func(resp interface{}))
@@ -105,7 +111,7 @@ var _ = Describe("Presenter", func() {
 				)
 			})
 			It("should not return an error", func() {
-				presenter.StockHandler(nil, nil)
+				presenter.StockHandler(mockContext)
 				Expect(response).To(Equal(msg))
 			})
 		})
@@ -115,11 +121,11 @@ var _ = Describe("Presenter", func() {
 		When("upgrading the HTTP server connection to the WebSocket protocol fails", func() {
 			BeforeEach(func() {
 				gomock.InOrder(
-					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(nil, errors.New(upgradeErrMsg)),
+					mockUpgarder.EXPECT().Upgrade(mockContext.Writer, mockContext.Request, nil).Return(nil, errors.New(upgradeErrMsg)),
 				)
 			})
 			It("should return an error", func() {
-				presenter.CryptoHandler(nil, nil)
+				presenter.CryptoHandler(mockContext)
 				Expect(response).To(Equal(""))
 			})
 		})
@@ -127,11 +133,11 @@ var _ = Describe("Presenter", func() {
 		When("Subscribing for responding fails", func() {
 			BeforeEach(func() {
 				gomock.InOrder(
-					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(mockConn, nil),
+					mockUpgarder.EXPECT().Upgrade(mockContext.Writer, mockContext.Request, nil).Return(mockConn, nil),
 					mockBus.EXPECT().Subscribe(cryptoTopic, gomock.Any()).Return(errors.New(subscribeErrMsg)))
 			})
 			It("should return an error", func() {
-				presenter.CryptoHandler(nil, nil)
+				presenter.CryptoHandler(mockContext)
 				Expect(response).To(Equal(""))
 			})
 		})
@@ -139,7 +145,7 @@ var _ = Describe("Presenter", func() {
 		When("Writing JSON fails", func() {
 			BeforeEach(func() {
 				gomock.InOrder(
-					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(mockConn, nil),
+					mockUpgarder.EXPECT().Upgrade(mockContext.Writer, mockContext.Request, nil).Return(mockConn, nil),
 					mockBus.EXPECT().Subscribe(cryptoTopic, gomock.Any()).DoAndReturn(
 						func(topic string, fn interface{}) error {
 							f, ok := fn.(func(resp interface{}))
@@ -152,7 +158,7 @@ var _ = Describe("Presenter", func() {
 			})
 
 			It("should return an error", func() {
-				presenter.CryptoHandler(nil, nil)
+				presenter.CryptoHandler(mockContext)
 				Expect(response).To(Equal(""))
 			})
 		})
@@ -160,7 +166,7 @@ var _ = Describe("Presenter", func() {
 		When("upgrading the HTTP server connection to the WebSocket protocol succeed and subscribing for responding", func() {
 			BeforeEach(func() {
 				gomock.InOrder(
-					mockUpgarder.EXPECT().Upgrade(nil, nil, nil).Return(mockConn, nil),
+					mockUpgarder.EXPECT().Upgrade(mockContext.Writer, mockContext.Request, nil).Return(mockConn, nil),
 					mockBus.EXPECT().Subscribe(cryptoTopic, gomock.Any()).DoAndReturn(
 						func(topic string, fn interface{}) error {
 							f, ok := fn.(func(resp interface{}))
@@ -178,7 +184,7 @@ var _ = Describe("Presenter", func() {
 				)
 			})
 			It("should not return an error", func() {
-				presenter.CryptoHandler(nil, nil)
+				presenter.CryptoHandler(mockContext)
 				Expect(response).To(Equal(msg))
 			})
 		})

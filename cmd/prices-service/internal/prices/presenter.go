@@ -3,6 +3,8 @@ package prices
 import (
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 //go:generate mockgen -source=presenter.go -destination=mocks/presenter.go
@@ -31,8 +33,8 @@ func NewPresenter(upgrader Upgrader, bus EventBus) *Presenter {
 	}
 }
 
-func (p *Presenter) StockHandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := p.upgrader.Upgrade(w, r, nil)
+func (p *Presenter) StockHandler(context *gin.Context) {
+	conn, err := p.upgrader.Upgrade(context.Writer, context.Request, nil)
 	if err != nil {
 		log.Println(err)
 		return
@@ -41,8 +43,8 @@ func (p *Presenter) StockHandler(w http.ResponseWriter, r *http.Request) {
 	p.subscribeForResponding(conn, "stocks")
 }
 
-func (p *Presenter) CryptoHandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := p.upgrader.Upgrade(w, r, nil)
+func (p *Presenter) CryptoHandler(context *gin.Context) {
+	conn, err := p.upgrader.Upgrade(context.Writer, context.Request, nil)
 	if err != nil {
 		log.Println(err)
 		return
