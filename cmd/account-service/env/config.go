@@ -1,59 +1,37 @@
 package env
 
 import (
-	"log"
-	"os"
-	"strconv"
+	"fmt"
 
-	"github.com/joho/godotenv"
+	"github.com/kelseyhightower/envconfig"
 )
 
-type DBConfig struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	DBName   string
-}
-
 type ServerConfig struct {
-	Port int
+	Port int `envconfig:"SERVER_PORT" default:"8080"`
 }
 
-func goDotEnvVariable(key string) string {
-	err := godotenv.Load("./env/.env")
-
-	if err != nil {
-		log.Fatalf("Error loading .env file")
-	}
-
-	return os.Getenv(key)
+type PostgreDBConfig struct {
+	Host     string `envconfig:"POSTGRE_HOST" required:"true"`
+	Port     int    `envconfig:"POSTGRE_PORT" required:"true"`
+	Name     string `envconfig:"POSTGRE_NAME" required:"true"`
+	User     string `envconfig:"POSTGRE_USER" required:"true"`
+	Password string `envconfig:"POSTGRE_PASSWORD" required:"true"`
 }
 
-func LoadDBConfig() DBConfig {
-	host := goDotEnvVariable("HOST")
-	port, err := strconv.Atoi(goDotEnvVariable("DBPORT"))
-	if err != nil {
-		panic(err)
+func LoadServerConfig() (ServerConfig, error) {
+	var serverConfig ServerConfig
+	if err := envconfig.Process("", &serverConfig); err != nil {
+		return ServerConfig{}, fmt.Errorf("failed to load server config from environment: %w", err)
 	}
-	dbuser := goDotEnvVariable("DBUSER")
-	password := goDotEnvVariable("PASSWORD")
-	dbname := goDotEnvVariable("DBNAME")
-	return DBConfig{
-		Host:     host,
-		Port:     port,
-		User:     dbuser,
-		Password: password,
-		DBName:   dbname,
-	}
+
+	return serverConfig, nil
 }
 
-func LoadServerConfig() ServerConfig {
-	port, err := strconv.Atoi(goDotEnvVariable("SERVER_PORT"))
-	if err != nil {
-		panic(err)
+func LoadPostgreDBConfig() (PostgreDBConfig, error) {
+	var postgreDBConfig PostgreDBConfig
+	if err := envconfig.Process("", &postgreDBConfig); err != nil {
+		return PostgreDBConfig{}, fmt.Errorf("failed to load postgre database config from environment: %w", err)
 	}
-	return ServerConfig{
-		Port: port,
-	}
+
+	return postgreDBConfig, nil
 }

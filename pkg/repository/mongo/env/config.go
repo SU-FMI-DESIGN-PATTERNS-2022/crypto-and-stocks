@@ -1,51 +1,32 @@
 package env
 
 import (
-	"log"
-	"os"
+	"errors"
+	"fmt"
 
-	"github.com/joho/godotenv"
+	"github.com/kelseyhightower/envconfig"
 )
 
-type MongoConfig struct {
-	LocalDriver  string
-	RemoteDriver string
-	Host         string
-	Port         string
-	Database     string
-	User         string
-	Password     string
-	Options      string
+type MongoDBConfig struct {
+	Host         string `envconfig:"MONGO_HOST" required:"true"`
+	Port         int    `envconfig:"MONGO_PORT" required:"true"`
+	LocalDriver  string `envconfig:"MONGO_LOCAL_DRIVER"`
+	RemoteDriver string `envconfig:"MONGO_REMOTE_DRIVER"`
+	User         string `envconfig:"MONGO_USER" required:"true"`
+	Database     string `envconfig:"MONGO_DATABASE" required:"true"`
+	Password     string `envconfig:"MONGO_PASSWORD" required:"true"`
+	Options      string `envconfig:"MONGO_OPTIONS" required:"true"`
 }
 
-func goDotEnvVariable(key string) string {
-	err := godotenv.Load("../../pkg/repository/mongo/env/.env")
-
-	if err != nil {
-		log.Fatalf("Error loading .env file")
+func LoadMongoDBConfig() (MongoDBConfig, error) {
+	var mongoDBConfig MongoDBConfig
+	if err := envconfig.Process("", &mongoDBConfig); err != nil {
+		return MongoDBConfig{}, fmt.Errorf("failed to load mongo database config from environment: %w", err)
 	}
 
-	return os.Getenv(key)
-}
-
-func LoadMongoConfig() MongoConfig {
-	host := goDotEnvVariable("MONGO_HOST")
-	port := goDotEnvVariable("MONGO_PORT")
-	localDriver := goDotEnvVariable("MONGO_LOCAL_DRIVER")
-	remoteDriver := goDotEnvVariable("MONGO_REMOTE_DRIVER")
-	user := goDotEnvVariable("MONGO_USER")
-	database := goDotEnvVariable("MONGO_DATABASE")
-	password := goDotEnvVariable("MONGO_PASSWORD")
-	options := goDotEnvVariable("MONGO_OPTIONS")
-
-	return MongoConfig{
-		LocalDriver:  localDriver,
-		RemoteDriver: remoteDriver,
-		Host:         host,
-		Port:         port,
-		User:         user,
-		Database:     database,
-		Password:     password,
-		Options:      options,
+	if mongoDBConfig.LocalDriver == "" && mongoDBConfig.RemoteDriver == "" {
+		return MongoDBConfig{}, errors.New("at least one of the drevers(local or remote) should be set")
 	}
+
+	return mongoDBConfig, nil
 }

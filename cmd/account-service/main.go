@@ -11,25 +11,33 @@ import (
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/repositories/order_repository"
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/cmd/account-service/internal/repositories/user_repository"
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/database"
-	mongo_env "github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/env"
+	mongoEnv "github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/env"
 	"github.com/gorilla/websocket"
 )
 
 func main() {
-
-	dbConfig := env.LoadDBConfig()
-	db, err := repository.Connect(dbConfig)
-
+	dbConfig, err := env.LoadPostgreDBConfig()
 	if err != nil {
-		fmt.Println("Failed to open database:", err)
-		return
+		panic(err)
+	}
+
+	db, err := repository.Connect(dbConfig)
+	if err != nil {
+		panic(err)
 	}
 
 	defer db.Close()
 
-	serverConfig := env.LoadServerConfig()
+	serverConfig, err := env.LoadServerConfig()
+	if err != nil {
+		panic(err)
+	}
 
-	mongoConfig := mongo_env.LoadMongoConfig()
+	mongoConfig, err := mongoEnv.LoadMongoDBConfig()
+	if err != nil {
+		panic(err)
+	}
+
 	client, err := database.Connect(mongoConfig, database.Remote)
 
 	if err != nil {
