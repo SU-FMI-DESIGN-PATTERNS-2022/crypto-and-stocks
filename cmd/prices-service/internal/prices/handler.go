@@ -3,10 +3,10 @@ package prices
 import "github.com/gin-gonic/gin"
 
 type PricesHandler struct {
-	presenter PricesPresenter
+	presenter Presenter
 }
 
-func NewPricesHandler(pricesPresenter PricesPresenter) *PricesHandler {
+func NewPricesHandler(pricesPresenter Presenter) *PricesHandler {
 	return &PricesHandler{
 		presenter: pricesPresenter,
 	}

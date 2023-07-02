@@ -8,14 +8,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func NewStreamConfig(wsConfig env.WebSocetConfig) StreamConfig {
-	return StreamConfig{
-		URL:    wsConfig.CryptoURL,
-		Quotes: wsConfig.CryptoQuotes,
-		Key:    wsConfig.Key,
-		Secret: wsConfig.Secret,
-	}
-}
 func NewCryptoConfig(wsConfig env.WebSocetConfig) StreamConfig {
 	return StreamConfig{
 		URL:    wsConfig.CryptoURL,
@@ -88,15 +80,13 @@ func NewPriceStream(clientSocetConfig StreamConfig) (*Stream, error) {
 func (s *Stream) Start(msgHandler func([]byte) error) error {
 	errChan := make(chan error, 1)
 
-	go s.listenForResponse(errChan)
-	go s.handleResponse(msgHandler, errChan)
+	go s.listenForResponse(msgHandler, errChan)
 
 	return <-errChan
 }
 
-func (s *Stream) listenForResponse(errChan chan error) {
+func (s *Stream) listenForResponse(msgHandler func([]byte) error, errChan chan error) {
 	defer func() {
-		close(s.closeChan)
 		s.conn.Close()
 	}()
 
@@ -111,23 +101,7 @@ func (s *Stream) listenForResponse(errChan chan error) {
 				return
 			}
 
-			s.priceStream <- resp
-		}
-	}
-}
-
-func (s *Stream) handleResponse(msgHandler func([]byte) error, errChan chan error) {
-	defer func() {
-		close(s.priceStream)
-	}()
-
-	for {
-		select {
-		case <-s.closeChan:
-			return
-		case response := <-s.priceStream:
-			err := msgHandler(response)
-			if err != nil {
+			if err := msgHandler(resp); err != nil {
 				errChan <- fmt.Errorf("handling message fails: %w", err)
 				return
 			}

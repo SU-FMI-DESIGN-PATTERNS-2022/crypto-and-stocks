@@ -18,16 +18,16 @@ const (
 	Remote
 )
 
-func Connect(config env.MongoConfig, connection Connection) (*mongo.Client, error) {
+func Connect(config env.MongoDBConfig, connection Connection) (*mongo.Client, error) {
 	var mongoconn string
 
 	switch connection {
 	case Local:
-		mongoconn = fmt.Sprintf("%s://localhost:%s", config.LocalDriver, config.Port)
+		mongoconn = fmt.Sprintf("%s://localhost:%d", config.LocalDriver, config.Port)
 	case Remote:
 		mongoconn = fmt.Sprintf("%s://%s:%s@%s/?%s", config.RemoteDriver, config.User, config.Password, config.Host, config.Options)
 	default:
-		return nil, errors.New("Unrecognized connection type")
+		return nil, errors.New("unrecognized connection type")
 	}
 
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoconn))
