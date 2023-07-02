@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"net/http"
 
@@ -37,13 +38,13 @@ func main() {
 	}
 
 	defer func() {
-		if err = client.Disconnect(context.TODO()); err != nil {
+		if err = mongoClient.Disconnect(context.TODO()); err != nil {
 			panic(err)
 		}
 	}()
 
-	cryptoRepo := database.NewCollection[database.CryptoPrices](client, mongoConfig.Database, "CryptoPrices")
-	stocksRepo := database.NewCollection[database.StockPrices](client, mongoConfig.Database, "StockPrices")
+	cryptoRepo := database.NewCollection[database.CryptoPrices](mongoClient, mongoConfig.Database, "CryptoPrices")
+	stocksRepo := database.NewCollection[database.StockPrices](mongoClient, mongoConfig.Database, "StockPrices")
 
 	repoController := prices.NewRepositoryController(cryptoRepo, stocksRepo)
 
@@ -87,5 +88,7 @@ func main() {
 	http.HandleFunc("/crypto", pricesPresenter.CryptoHandler)
 	http.HandleFunc("/stocks", pricesPresenter.StockHandler)
 
-	log.Fatal(http.ListenAndServe(*addr, nil))
+	serverConfig, err := env.LoadServerConfig()
+
+	log.Fatal(http.ListenAndServe(fmt.Sprintf("%d", serverConfig.Port), nil))
 }
