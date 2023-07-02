@@ -3,7 +3,6 @@ package stream_test
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/golang/mock/gomock"
@@ -252,9 +251,8 @@ var _ = Describe("Controller", func() {
 
 func getCryptoResponse() stream.CryptoResponse {
 	date, err := time.Parse("2006-01-02", "2023-02-16")
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
+	Expect(err).ToNot(HaveOccurred())
+
 	return stream.CryptoResponse{
 		Response: stream.Response{
 			Symbol: "symbol",
@@ -266,9 +264,7 @@ func getCryptoResponse() stream.CryptoResponse {
 
 func getStockResponse() stream.StockResponse {
 	date, err := time.Parse("2006-01-02", "2023-02-16")
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
+	Expect(err).ToNot(HaveOccurred())
 	return stream.StockResponse{
 		Response: stream.Response{
 			Symbol: "symbol",
@@ -285,9 +281,7 @@ func convertToCryptoJSON(cryptoResp stream.CryptoResponse) []byte {
 	responses := []stream.CryptoResponse{cryptoResp}
 	res, err := json.Marshal(responses)
 
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
+	Expect(err).ToNot(HaveOccurred())
 
 	return res
 }
@@ -296,9 +290,7 @@ func convertToStockJSON(stockResp stream.StockResponse) []byte {
 	responses := []stream.StockResponse{stockResp}
 	res, err := json.Marshal(responses)
 
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
+	Expect(err).ToNot(HaveOccurred())
 
 	return res
 }

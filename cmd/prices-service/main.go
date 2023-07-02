@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"fmt"
 	"log"
@@ -31,17 +35,17 @@ func (u *upgrader) Upgrade(w http.ResponseWriter, r *http.Request, responseHeade
 func main() {
 	mongoConfig, err := mongoEnv.LoadMongoDBConfig()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	mongoClient, err := database.Connect(mongoConfig, database.Remote)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	wsConfig, err := env.LoadWebSocetConfig()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	cryptoStreamConfig := stream.NewCryptoConfig(wsConfig)
@@ -49,12 +53,12 @@ func main() {
 
 	cryptoStream, err := stream.NewPriceStream(cryptoStreamConfig)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	stockStream, err := stream.NewPriceStream(stockStreamConfig)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	cryptoRepo := database.NewCollection[database.CryptoPrices](mongoClient, mongoConfig.Database, "CryptoPrices")
@@ -65,7 +69,7 @@ func main() {
 	streamController := stream.NewController(cryptoStream, stockStream, bus)
 
 	if err := repoController.ListenForStoring(bus); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	go func() {
@@ -85,11 +89,16 @@ func main() {
 	prices.HandleRoutes(&router.RouterGroup, pricesPresenter)
 
 	serverConfig, err := env.LoadServerConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
 		Handler: router,
 	}
+
+	log.Println("Starting server...")
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -97,11 +106,23 @@ func main() {
 		}
 	}()
 
-	defer streamController.StopStreams()
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	defer func() {
-		if err = mongoClient.Disconnect(context.TODO()); err != nil {
-			panic(err)
-		}
-	}()
+	<-quit
+
+	log.Println("Shutting down server...")
+
+	streamController.StopStreams()
+
+	contextWithTimout, cancel := context.WithTimeout(context.TODO(), 2*time.Second)
+	defer cancel()
+
+	if err = mongoClient.Disconnect(contextWithTimout); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := srv.Shutdown(context.TODO()); err != nil {
+		log.Fatal("Server forced to shutdown: ", err)
+	}
 }
