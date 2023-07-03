@@ -124,8 +124,11 @@ func (controller *Controller) EstimateUserAmount(userId int64) (float64, error) 
 		}
 	}
 
-	userAmount, err := controller.userRepo.GetUserAmount(userId)
+	return controller.calculateUserAmount(quantityMap, userId)
+}
 
+func (controller *Controller) calculateUserAmount(quantityMap map[string]float64, userId int64) (float64, error) {
+	userAmount, err := controller.userRepo.GetUserAmount(userId)
 	if err != nil {
 		return 0, err
 	}

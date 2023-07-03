@@ -135,45 +135,61 @@ func (presenter *Presenter) GetAllOrdersByUserIdAndSymbol(context *gin.Context) 
 func (presenter *Presenter) storeOrder(order order_repository.Order) error {
 	switch order.Type {
 	case "buy":
-		amount, err := presenter.userRepo.GetUserAmount(order.UserID)
-		if err != nil {
+		if err := presenter.storeBuyOrder(order); err != nil {
 			return err
-		}
-
-		if amount < order.Amount*order.Price {
-			return errors.New("not enough amount")
-		}
-
-		updateErr := presenter.userRepo.UpdateUserAmount(order.UserID, amount-order.Amount*order.Price)
-		if updateErr != nil {
-			return updateErr
 		}
 	case "sell":
-		orders, err := presenter.orderRepo.GetAllOrdersByUserIdAndSymbol(order.UserID, order.Symbol)
-		if err != nil {
+		if err := presenter.storeSellOrder(order); err != nil {
 			return err
-		}
-
-		var amount float64
-		for _, o := range orders {
-			if o.Type == "buy" {
-				amount += o.Amount
-			} else {
-				amount -= o.Amount
-			}
-		}
-
-		if amount < order.Amount {
-			return errors.New("not enough amount")
-		}
-
-		updateErr := presenter.userRepo.UpdateUserAmount(order.UserID, amount+order.Amount*order.Price)
-		if updateErr != nil {
-			return updateErr
 		}
 	default:
 		return errors.New("invalid order type")
 	}
 
 	return presenter.orderRepo.StoreOrder(order)
+}
+
+func (presenter *Presenter) storeBuyOrder(order order_repository.Order) error {
+	amount, err := presenter.userRepo.GetUserAmount(order.UserID)
+	if err != nil {
+		return err
+	}
+
+	if amount < order.Amount*order.Price {
+		return errors.New("not enough amount")
+	}
+
+	updateErr := presenter.userRepo.UpdateUserAmount(order.UserID, amount-order.Amount*order.Price)
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}
+
+func (presenter *Presenter) storeSellOrder(order order_repository.Order) error {
+	orders, err := presenter.orderRepo.GetAllOrdersByUserIdAndSymbol(order.UserID, order.Symbol)
+	if err != nil {
+		return err
+	}
+
+	var amount float64
+	for _, o := range orders {
+		if o.Type == "buy" {
+			amount += o.Amount
+		} else {
+			amount -= o.Amount
+		}
+	}
+
+	if amount < order.Amount {
+		return errors.New("not enough amount")
+	}
+
+	updateErr := presenter.userRepo.UpdateUserAmount(order.UserID, amount+order.Amount*order.Price)
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
 }
