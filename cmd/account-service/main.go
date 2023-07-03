@@ -69,8 +69,9 @@ func main() {
 		},
 	}
 
-	orderPresenter := order.NewOrderPresenter(orderRepository, userRepository, &upgrader{wsUpgrader})
-	userPresenter := user.NewUserPresenter(orderRepository, userRepository, cryptoRepository, stockRepository)
+	orderPresenter := order.NewPresenter(orderRepository, userRepository, &upgrader{wsUpgrader})
+	userController := user.NewController(orderRepository, userRepository, cryptoRepository, stockRepository)
+	userPresenter := user.NewPresenter(*userController)
 
 	router := gin.Default()
 	ordersGroup := router.Group("orders")

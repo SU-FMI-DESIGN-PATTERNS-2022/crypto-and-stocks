@@ -5,7 +5,6 @@ import (
 )
 
 func HandleRoutes(router *gin.RouterGroup, orderPresenter Presenter) {
-
 	router.GET("/all", orderPresenter.GetAllOrders)
 	router.GET("/store", orderPresenter.StoreOrder)
 	router.GET("/user/:id", orderPresenter.GetAllOrdersByUserId)

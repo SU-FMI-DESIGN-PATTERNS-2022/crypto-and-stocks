@@ -40,7 +40,7 @@ type Presenter struct {
 	upgrader  Upgrader
 }
 
-func NewOrderPresenter(orderRepo OrderRepository, userRepo UserRepository, upgrader Upgrader) *Presenter {
+func NewPresenter(orderRepo OrderRepository, userRepo UserRepository, upgrader Upgrader) *Presenter {
 	return &Presenter{
 		orderRepo: orderRepo,
 		userRepo:  userRepo,
