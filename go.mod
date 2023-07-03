@@ -7,12 +7,11 @@ require (
 	github.com/golang/mock v1.7.0-rc.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/jmoiron/sqlx v1.3.5
-	github.com/joho/godotenv v1.4.0
 	github.com/lib/pq v1.10.7
 	go.mongodb.org/mongo-driver v1.11.3
 )
 
-require github.com/kelseyhightower/envconfig v1.4.0 // indirect
+require github.com/kelseyhightower/envconfig v1.4.0
 
 require (
 	github.com/go-logr/logr v1.2.3 // indirect
