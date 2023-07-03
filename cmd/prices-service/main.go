@@ -93,7 +93,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	srv := &http.Server{
+	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
 		Handler: router,
 	}
@@ -101,7 +101,7 @@ func main() {
 	log.Println("Starting server...")
 
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}
 	}()
@@ -122,7 +122,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := srv.Shutdown(context.TODO()); err != nil {
+	if err := server.Shutdown(context.TODO()); err != nil {
 		log.Fatal("Server forced to shutdown: ", err)
 	}
 }
