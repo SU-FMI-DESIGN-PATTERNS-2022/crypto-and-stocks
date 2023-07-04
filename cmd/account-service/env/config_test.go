@@ -13,7 +13,7 @@ var _ = Describe("Config", func() {
 	const invalid = "invalid"
 
 	Context("LoadServerConfig", func() {
-		const serverPort = "SERVER_PORT"
+		const serverPort = "ACCOUNT_SERVER_PORT"
 
 		AfterEach(func() {
 			os.Unsetenv(serverPort)
