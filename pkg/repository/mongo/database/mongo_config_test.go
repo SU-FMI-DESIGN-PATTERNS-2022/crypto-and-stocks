@@ -1,10 +1,11 @@
 package database_test
 
 import (
+	"os"
+
 	"github.com/SU-FMI-DESIGN-PATTERNS-2022/crypto-and-stocks/pkg/repository/mongo/env"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"os"
 )
 
 var _ = Describe("Mongo Envs", func() {
