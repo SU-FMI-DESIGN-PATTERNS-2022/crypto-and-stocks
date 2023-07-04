@@ -24,19 +24,19 @@ func NewRepositoryController(cryptoRepo PricesRepository[database.CryptoPrices],
 	}
 }
 
-func (r *RepositoryController) ListenForStoring(bus EventBus) error {
-	if err := bus.Subscribe("crypto", r.handleCryptoMessage); err != nil {
+func (controller *RepositoryController) ListenForStoring(bus EventBus) error {
+	if err := bus.Subscribe("crypto", controller.handleCryptoMessage); err != nil {
 		return fmt.Errorf("error with subscribing to crypto messages: %w", err)
 	}
 
-	if err := bus.Subscribe("stocks", r.handleStocksMessage); err != nil {
+	if err := bus.Subscribe("stocks", controller.handleStocksMessage); err != nil {
 		return fmt.Errorf("error with subscribing to stocks messages: %w", err)
 	}
 
 	return nil
 }
 
-func (r *RepositoryController) handleCryptoMessage(resp stream.CryptoResponse) {
+func (controller *RepositoryController) handleCryptoMessage(resp stream.CryptoResponse) {
 	cryptoPrices := database.CryptoPrices{
 		Prices: database.Prices{
 			Symbol:   resp.Symbol,
@@ -49,12 +49,12 @@ func (r *RepositoryController) handleCryptoMessage(resp stream.CryptoResponse) {
 		Exchange: resp.Exchange,
 	}
 
-	if err := r.cryptoRepo.StoreEntry(cryptoPrices); err != nil {
+	if err := controller.cryptoRepo.StoreEntry(cryptoPrices); err != nil {
 		log.Println(err)
 	}
 }
 
-func (r *RepositoryController) handleStocksMessage(resp stream.StockResponse) {
+func (controller *RepositoryController) handleStocksMessage(resp stream.StockResponse) {
 	stockPrice := database.StockPrices{
 		Prices: database.Prices{
 			Symbol:   resp.Symbol,
@@ -71,7 +71,7 @@ func (r *RepositoryController) handleStocksMessage(resp stream.StockResponse) {
 		Tape:        resp.Tape,
 	}
 
-	if err := r.stocksRepo.StoreEntry(stockPrice); err != nil {
+	if err := controller.stocksRepo.StoreEntry(stockPrice); err != nil {
 		log.Println(err)
 	}
 }

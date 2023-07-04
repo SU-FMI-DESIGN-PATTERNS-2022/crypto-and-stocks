@@ -7,7 +7,7 @@ import (
 )
 
 type ServerConfig struct {
-	Port int `envconfig:"SERVER_PORT" default:"8081"`
+	Port int `envconfig:"PRICES_SERVER_PORT" default:"8081"`
 }
 
 type WebSocetConfig struct {

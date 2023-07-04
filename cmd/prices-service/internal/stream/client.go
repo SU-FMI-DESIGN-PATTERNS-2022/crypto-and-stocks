@@ -77,25 +77,25 @@ func NewPriceStream(clientSocetConfig StreamConfig) (*Stream, error) {
 	}, nil
 }
 
-func (s *Stream) Start(msgHandler func([]byte) error) error {
+func (stream *Stream) Start(msgHandler func([]byte) error) error {
 	errChan := make(chan error, 1)
 
-	go s.listenForResponse(msgHandler, errChan)
+	go stream.listenForResponse(msgHandler, errChan)
 
 	return <-errChan
 }
 
-func (s *Stream) listenForResponse(msgHandler func([]byte) error, errChan chan error) {
+func (stream *Stream) listenForResponse(msgHandler func([]byte) error, errChan chan error) {
 	defer func() {
-		s.conn.Close()
+		stream.conn.Close()
 	}()
 
 	for {
 		select {
-		case <-s.closeChan:
+		case <-stream.closeChan:
 			return
 		default:
-			resp, err := s.conn.readResponse("q", "")
+			resp, err := stream.conn.readResponse("q", "")
 			if err != nil {
 				errChan <- fmt.Errorf("read quote response fails: %w", err)
 				return
@@ -109,8 +109,8 @@ func (s *Stream) listenForResponse(msgHandler func([]byte) error, errChan chan e
 	}
 }
 
-func (s *Stream) Stop() {
-	close(s.closeChan)
+func (stream *Stream) Stop() {
+	close(stream.closeChan)
 }
 
 func (sc *socetConn) authenticate(key, secret string) error {
@@ -171,7 +171,7 @@ func (sc *socetConn) readResponse(expectedType, expectedMsg string) ([]byte, err
 
 	for _, responseMsg := range response {
 		if responseMsg.Type != expectedType || responseMsg.Message != expectedMsg {
-			return nil, fmt.Errorf("unexpected response: %d: %s", responseMsg.Code, responseMsg.Message)
+			return nil, fmt.Errorf("unexpected response: %d: %stream", responseMsg.Code, responseMsg.Message)
 		}
 	}
 

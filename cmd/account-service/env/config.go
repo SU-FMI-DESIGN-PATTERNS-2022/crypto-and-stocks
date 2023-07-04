@@ -7,7 +7,7 @@ import (
 )
 
 type ServerConfig struct {
-	Port int `envconfig:"SERVER_PORT" default:"8080"`
+	Port int `envconfig:"ACCOUNT_SERVER_PORT" default:"8080"`
 }
 
 type PostgreDBConfig struct {
