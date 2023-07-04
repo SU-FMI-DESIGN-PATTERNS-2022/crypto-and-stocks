@@ -1,22 +1,21 @@
 package database
 
 import (
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
-	"testing"
-	"time"
 )
-
-// Create a new collection with the given name. The collection will be dropped when the test is over.
 
 func TestFindOne(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	defer mt.Close()
 
 	mt.Run("success", func(mt *mtest.T) {
-		//cryptoCollection = mt.Coll
-		//stockCollection = mt.Coll
+		cryptoCollection := NewCollection[CryptoPrices](mt.Client, "CryptoStocks", "CryptoPrices")
+		stocksCollection := NewCollection[StockPrices](mt.Client, "CryptoStocks", "StockPrices")
 
 		expectedStocks := StockPrices{
 			Prices: Prices{
@@ -25,7 +24,6 @@ func TestFindOne(t *testing.T) {
 				BidSize:  100.0,
 				AskPrice: 100.0,
 				AskSize:  100.0,
-				Date:     time.Now(),
 			},
 			AskExchange: "NASDAQ",
 			BidExchange: "NASDAQ",
@@ -40,36 +38,39 @@ func TestFindOne(t *testing.T) {
 				BidSize:  100.0,
 				AskPrice: 100.0,
 				AskSize:  100.0,
-				Date:     time.Now(),
 			},
 			Exchange: "NASDAQ",
 		}
-		mt.AddMockResponses(mtest.CreateCursorResponse(1, "crypto", mtest.FirstBatch, bson.D{
-			{"_id", "1"},
-			{"symbol", expectedCryptos.Symbol},
-			{"bid_price", expectedCryptos.BidPrice},
-			{"bid_size", expectedCryptos.BidSize},
-			{"ask_price", expectedCryptos.AskPrice},
-			{"ask_size", expectedCryptos.AskSize},
-			{"date", expectedCryptos.Date},
-			{"exchange", expectedCryptos.Exchange},
+
+		mt.AddMockResponses(mtest.CreateCursorResponse(1, "db.crypto", mtest.FirstBatch, bson.D{
+			{Key: "_id", Value: "1"},
+			{Key: "prices", Value: bson.D{
+				{Key: "symbol", Value: expectedCryptos.Prices.Symbol},
+				{Key: "bid_price", Value: expectedCryptos.Prices.BidPrice},
+				{Key: "bid_size", Value: expectedCryptos.Prices.BidSize},
+				{Key: "ask_price", Value: expectedCryptos.Prices.AskPrice},
+				{Key: "ask_size", Value: expectedCryptos.Prices.AskSize},
+			}},
+			{Key: "exchange", Value: expectedCryptos.Exchange},
 		}))
 		cryptoResponse, err := cryptoCollection.GetMostRecentPriceBySymbol("BTC")
+
 		assert.Nil(t, err)
 		assert.Equal(t, expectedCryptos, cryptoResponse)
-		mt.AddMockResponses(mtest.CreateCursorResponse(1, "stocks", mtest.FirstBatch, bson.D{
-			{"_id", "1"},
-			{"symbol", expectedStocks.Symbol},
-			{"bid_price", expectedStocks.BidPrice},
-			{"bid_size", expectedStocks.BidSize},
-			{"ask_price", expectedStocks.AskPrice},
-			{"ask_size", expectedStocks.AskSize},
-			{"date", expectedStocks.Date},
-			{"ask_exchange", expectedStocks.AskExchange},
-			{"bid_exchange", expectedStocks.BidExchange},
-			{"trade_size", expectedStocks.TradeSize},
-			{"conditions", expectedStocks.Conditions},
-			{"tape", expectedStocks.Tape},
+		mt.AddMockResponses(mtest.CreateCursorResponse(1, "db.stocks", mtest.FirstBatch, bson.D{
+			{Key: "_id", Value: "1"},
+			{Key: "prices", Value: bson.D{
+				{Key: "symbol", Value: expectedStocks.Symbol},
+				{Key: "bid_price", Value: expectedStocks.BidPrice},
+				{Key: "bid_size", Value: expectedStocks.BidSize},
+				{Key: "ask_price", Value: expectedStocks.AskPrice},
+				{Key: "ask_size", Value: expectedStocks.AskSize},
+			}},
+			{Key: "ask_exchange", Value: expectedStocks.AskExchange},
+			{Key: "bid_exchange", Value: expectedStocks.BidExchange},
+			{Key: "trade_size", Value: expectedStocks.TradeSize},
+			{Key: "conditions", Value: expectedStocks.Conditions},
+			{Key: "tape", Value: expectedStocks.Tape},
 		}))
 		stockResponse, err := stocksCollection.GetMostRecentPriceBySymbol("AAPL")
 		assert.Nil(t, err)
@@ -83,6 +84,7 @@ func TestInsertOne(t *testing.T) {
 	defer mt.Close()
 
 	mt.Run("success", func(mt *mtest.T) {
+		stocksCollection := NewCollection[StockPrices](mt.Client, "CryptoStocks", "StockPrices")
 
 		mt.AddMockResponses(mtest.CreateSuccessResponse())
 
@@ -111,6 +113,7 @@ func TestInsertMany(t *testing.T) {
 	defer mt.Close()
 
 	mt.Run("success", func(mt *mtest.T) {
+		stocksCollection := NewCollection[StockPrices](mt.Client, "CryptoStocks", "StockPrices")
 
 		mt.AddMockResponses(mtest.CreateSuccessResponse())
 
