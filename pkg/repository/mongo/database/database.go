@@ -25,103 +25,105 @@ func NewCollection[Prices CryptoPrices | StockPrices](client *mongo.Client, db s
 	}
 }
 
-func (c *Collection[Prices]) insertOne(col string, doc interface{}) (*mongo.InsertOneResult, error) {
+func (collection *Collection[Prices]) insertOne(col string, doc interface{}) (*mongo.InsertOneResult, error) {
 
-	collection := c.instance.Database(c.database).Collection(col)
+	dbCollection := collection.instance.Database(collection.database).Collection(col)
 
-	result, err := collection.InsertOne(context.TODO(), doc)
+	result, err := dbCollection.InsertOne(context.TODO(), doc)
 	return result, err
 }
 
 // TODO: Yet to be used
-func (c *Collection[Prices]) insertMany(col string, docs []interface{}) (*mongo.InsertManyResult, error) {
+func (collection *Collection[Prices]) insertMany(col string, docs []interface{}) (*mongo.InsertManyResult, error) {
 
-	collection := c.instance.Database(c.database).Collection(col)
+	dbCollection := collection.instance.Database(collection.database).Collection(col)
 
-	result, err := collection.InsertMany(context.TODO(), docs)
+	result, err := dbCollection.InsertMany(context.TODO(), docs)
 	return result, err
 }
 
-func (c *Collection[Prices]) StoreEntry(price Prices) error {
-	_, err := c.insertOne(c.collectionName, price)
+func (collection *Collection[Prices]) StoreEntry(price Prices) error {
+	_, err := collection.insertOne(collection.collectionName, price)
 	return err
 }
 
+func (collection *Collection[Prices]) GetAllPrices() ([]Prices, error) {
+	dbCollection := collection.instance.Database(collection.database).Collection(collection.collectionName)
 
-func (c *Collection[Prices]) GetAllPrices() ([]Prices, error) {
-	collection := c.instance.Database(c.database).Collection(c.collectionName)
-
-	result, err := collection.Find(context.TODO(), bson.D{})
+	result, err := dbCollection.Find(context.TODO(), bson.D{})
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	var prices []Prices
 
 	if err = result.All(context.TODO(), &prices); err != nil {
-		panic(err)
+		return nil, err
 	}
 	return prices, err
 }
 
-func (c *Collection[Prices]) GetAllPricesBySymbol(symbol string) ([]Prices, error) {
-	collection := c.instance.Database(c.database).Collection(c.collectionName)
+func (collection *Collection[Prices]) GetAllPricesBySymbol(symbol string) ([]Prices, error) {
+	dbCollection := collection.instance.Database(collection.database).Collection(collection.collectionName)
 
 	filter := bson.D{primitive.E{Key: "symbol", Value: symbol}}
 
-	result, err := collection.Find(context.TODO(), filter)
+	result, err := dbCollection.Find(context.TODO(), filter)
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	var prices []Prices
 
 	if err = result.All(context.TODO(), &prices); err != nil {
-		panic(err)
+		return nil, err
 	}
 	return prices, err
 }
 
-func (c *Collection[Prices]) GetAllPricesByExchange(exchange string) ([]Prices, error) {
-	collection := c.instance.Database(c.database).Collection(c.collectionName)
+func (collection *Collection[Prices]) GetAllPricesByExchange(exchange string) ([]Prices, error) {
+	dbCollection := collection.instance.Database(collection.database).Collection(collection.collectionName)
 
 	filter := bson.D{primitive.E{Key: "exchange", Value: exchange}}
 
-	result, err := collection.Find(context.TODO(), filter)
+	result, err := dbCollection.Find(context.TODO(), filter)
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	var prices []Prices
 
 	if err = result.All(context.TODO(), &prices); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return prices, err
 }
 
-func (c *Collection[Prices]) GetAllPricesInPeriod(from time.Time, to time.Time) ([]Prices, error) {
-	collection := c.instance.Database(c.database).Collection(c.collectionName)
+func (collection *Collection[Prices]) GetAllPricesInPeriod(from time.Time, to time.Time) ([]Prices, error) {
+	dbCollection := collection.instance.Database(collection.database).Collection(collection.collectionName)
 
 	filter := bson.M{"date": bson.M{
 		"$gte": primitive.NewDateTimeFromTime(from),
 		"$lte": primitive.NewDateTimeFromTime(to)}}
 
-	result, err := collection.Find(context.TODO(), filter)
+	result, err := dbCollection.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
 
 	var prices []Prices
 
 	if err = result.All(context.TODO(), &prices); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return prices, err
 }
 
-func (c *Collection[Prices]) GetAllPricesInPeriodSymbol(from time.Time, to time.Time, symbol string) ([]Prices, error) {
-	collection := c.instance.Database(c.database).Collection(c.collectionName)
+func (collection *Collection[Prices]) GetAllPricesInPeriodSymbol(from time.Time, to time.Time, symbol string) ([]Prices, error) {
+	dbCollection := collection.instance.Database(collection.database).Collection(collection.collectionName)
 
 	filter := bson.M{"date": bson.M{
 		"$gte": primitive.NewDateTimeFromTime(from),
@@ -129,25 +131,28 @@ func (c *Collection[Prices]) GetAllPricesInPeriodSymbol(from time.Time, to time.
 		"symbol": symbol,
 	}
 
-	result, err := collection.Find(context.TODO(), filter)
+	result, err := dbCollection.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
 
 	var prices []Prices
 
 	if err = result.All(context.TODO(), &prices); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return prices, err
 }
 
-func (c *Collection[Prices]) GetMostRecentPriceBySymbol(symbol string) (Prices, error) {
-	collection := c.instance.Database(c.database).Collection(c.collectionName)
+func (collection *Collection[Prices]) GetMostRecentPriceBySymbol(symbol string) (Prices, error) {
+	dbCollection := collection.instance.Database(collection.database).Collection(collection.collectionName)
 
 	filter := bson.D{primitive.E{Key: "prices.symbol", Value: symbol}}
 	opts := options.FindOne().SetSort(bson.M{"$natural": -1})
 
 	var lastRecord Prices
-	err := collection.FindOne(context.TODO(), filter, opts).Decode(&lastRecord)
+	err := dbCollection.FindOne(context.TODO(), filter, opts).Decode(&lastRecord)
 
 	return lastRecord, err
 }
